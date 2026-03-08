@@ -67,11 +67,11 @@
                         <p class="text-xs text-text-muted truncate">Computer Science</p>
                     </div>
                 </div>
-                <a href="../login.html"
+                <button onclick="API.logout()"
                     class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-500/10 transition-all">
                     <i class="fa-solid fa-arrow-right-from-bracket w-5"></i>
                     <span class="font-bold text-sm">Sign Out</span>
-                </a>
+                </button>
             </div>
         </aside>
 
@@ -124,7 +124,7 @@
                     <div class="bg-card p-6 rounded-2xl border border-border-color shadow-sm">
                         <h3 class="font-bold text-lg mb-4 text-text-main">Quick Actions</h3>
                         <div class="space-y-3">
-                            <button
+                            <button onclick="toggleModal('modal-leave', true)"
                                 class="w-full flex items-center gap-3 p-3 rounded-xl border border-border-color hover:bg-main hover:border-red-500/30 transition text-left group">
                                 <div
                                     class="w-8 h-8 rounded-lg bg-green-500/10 text-green-400 flex items-center justify-center border border-green-500/20 group-hover:bg-green-500/20 transition-colors">
@@ -207,6 +207,52 @@
         </div>
     </div>
 
+    <!-- Leave Request Modal -->
+    <div id="modal-leave" class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-card w-full max-w-md rounded-3xl shadow-2xl border border-border-color overflow-hidden animate-in zoom-in duration-300">
+            <div class="p-8 border-b border-border-color">
+                <h3 class="text-xl font-bold text-text-main">New Leave Request</h3>
+            </div>
+            <div class="p-8 space-y-4">
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Leave Type</label>
+                    <select id="leave-type"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="SICK">Sick</option>
+                        <option value="CASUAL">Casual</option>
+                        <option value="VACATION">Vacation</option>
+                        <option value="CONFERENCE">Conference</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Start Date</label><input
+                            type="date" id="leave-start"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"></div>
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">End Date</label><input
+                            type="date" id="leave-end"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"></div>
+                </div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Semester</label>
+                    <select id="leave-semester"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="">Select Semester</option>
+                    </select>
+                </div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Reason</label><textarea
+                        id="leave-reason"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
+                        rows="2"></textarea></div>
+            </div>
+            <div class="p-8 bg-main flex gap-3"><button onclick="toggleModal('modal-leave', false)"
+                    class="flex-1 px-4 py-3 font-bold text-text-muted hover:text-text-main">Cancel</button><button
+                    onclick="submitLeaveRequest()"
+                    class="flex-1 bg-red-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors">Submit
+                    Leave</button></div>
+        </div>
+    </div>
+
+    <script src="../api-client.js"></script>
     <script src="script.js"></script>
 </body>
 

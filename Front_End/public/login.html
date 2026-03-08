@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="assets/js/theme-config.js"></script>
-    <script src="assets/js/seed-data.js"></script> <!-- Sample Data Seeder -->
+    <script src="api-client.js"></script>
 </head>
 
 <body
@@ -134,7 +134,6 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3000/api';
         let currentRole = 'student';
 
         // Role Switching Logic
@@ -214,40 +213,24 @@
             const password = document.getElementById('password').value;
             const errorMsg = document.getElementById('errorMessage');
 
+            errorMsg.classList.add('hidden');
+
             try {
-                const response = await fetch(`${API_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username,
-                        password,
-                        role: currentRole
-                    })
-                });
+                const result = await API.login(username, password, currentRole);
 
-                const data = await response.json();
-
-                if (response.ok) {
-                    // Success
-                    localStorage.setItem('tw_session', JSON.stringify({
-                        ...data,
-                        timestamp: Date.now()
-                    }));
-
-                    // Redirect based on role
+                if (result.success) {
                     const paths = {
                         admin: 'admin/index.html',
                         faculty: 'faculty/index.html',
                         student: 'student/index.html'
                     };
 
-                    let path = paths[currentRole];
+                    // Fallback to currentRole if result.user.role doesn't match keys exactly 
+                    // though backend role should dictate where to go.
+                    let path = paths[result.user.role] || paths[currentRole] || 'student/index.html';
                     window.location.href = path;
                 } else {
-                    // Error
-                    errorMsg.innerText = data.error || 'Invalid credentials';
+                    errorMsg.innerText = result.error || 'Invalid credentials';
                     errorMsg.classList.remove('hidden');
                 }
             } catch (err) {
@@ -265,17 +248,11 @@
             const password = document.getElementById('reg-password').value;
 
             try {
-                const response = await fetch(`${API_URL}/auth/register`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        fullName,
-                        username,
-                        password,
-                        role: 'admin'
-                    })
+                const response = await API.post('/auth/register', {
+                    full_name: fullName,
+                    username: username,
+                    password: password,
+                    role: 'admin'
                 });
 
                 if (response.ok) {

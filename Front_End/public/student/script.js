@@ -1,17 +1,52 @@
 // Student Logic
 
 let timetableData = [];
+let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Only proceed if authenticated
+    if (!API.isAuthenticated()) {
+        window.location.href = '../login.html';
+        return;
+    }
     loadData();
-    updateUI();
 });
 
-function loadData() {
-    timetableData = JSON.parse(localStorage.getItem('timeWeaver_timetable')) || [];
+async function loadData() {
+    try {
+        currentUser = await API.getCurrentUser();
+        if (!currentUser) {
+            API.logout();
+            return;
+        }
+
+        const fetchedData = await API.get('/timetables/');
+        if (fetchedData && fetchedData.length > 0 && fetchedData[0].slots) {
+            timetableData = fetchedData[0].slots.map(s => ({
+                day: s.day_of_week,
+                // frontend expects "09:00" format vs "09:00:00"
+                time: s.start_time.substring(0, 5),
+                subject: s.course_name || s.subject || 'Course',
+                faculty: s.faculty_name || s.faculty || 'Faculty',
+                room: s.room_name || s.room || 'Room'
+            }));
+        } else {
+            timetableData = [];
+        }
+        updateUI();
+    } catch (e) {
+        console.error("Error loading student data", e);
+    }
 }
 
 function updateUI() {
+
+    // Inject user data
+    const nameEl = document.getElementById('current-user-name');
+    if (nameEl && currentUser) {
+        nameEl.innerText = currentUser.full_name || currentUser.username;
+    }
+
     renderFullSchedule();
     renderTodaysClasses();
 }

@@ -1,0 +1,33 @@
+# === Python (Back_End) ===
+Back_End/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+*.egg
+dist/
+build/
+htmlcov/
+.coverage
+
+# === Node (Front_End) ===
+Front_End/node_modules/
+Front_End/.next/
+Front_End/dist/
+
+# === Environment ===
+.env
+*.env.local
+.env.*.local
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === OS ===
+Thumbs.db
+.DS_Store

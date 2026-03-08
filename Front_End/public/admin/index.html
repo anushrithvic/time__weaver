@@ -57,20 +57,22 @@
                 <div class="h-px bg-border-color my-2 mx-4"></div>
 
                 <p class="px-4 text-xs font-bold text-text-muted uppercase tracking-wider mb-2 mt-4">Resources</p>
-                <button onclick="showPage('faculty')" id="btn-faculty"
-                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
-                    <i class="fa-solid fa-id-card-clip w-5"></i>
-                    <span class="font-medium text-sm">Faculty Manager</span>
-                </button>
-                <button onclick="showPage('student')" id="btn-student"
-                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
-                    <i class="fa-solid fa-user-graduate w-5"></i>
-                    <span class="font-medium text-sm">Student Manager</span>
-                </button>
+
                 <button onclick="showPage('rooms')" id="btn-rooms"
                     class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
                     <i class="fa-solid fa-door-open w-5"></i>
                     <span class="font-medium text-sm">Room Manager</span>
+                </button>
+                <button onclick="showPage('faculty-preferences')" id="btn-faculty-preferences"
+                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
+                    <i
+                        class="fa-solid fa-star bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-yellow-600 w-5"></i>
+                    <span class="font-medium text-sm">Preferences</span>
+                </button>
+                <button onclick="showPage('faculty-courses')" id="btn-faculty-courses"
+                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
+                    <i class="fa-solid fa-book-open text-blue-400 w-5"></i>
+                    <span class="font-medium text-sm">Faculty Courses</span>
                 </button>
                 <div class="h-px bg-border-color my-2 mx-4"></div>
 
@@ -95,6 +97,21 @@
                     <i class="fa-solid fa-users w-5"></i>
                     <span class="font-medium text-sm">Sections</span>
                 </button>
+                <button onclick="showPage('elective-groups')" id="btn-elective-groups"
+                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
+                    <i class="fa-solid fa-layer-group w-5"></i>
+                    <span class="font-medium text-sm">Elective Groups</span>
+                </button>
+                <button onclick="showPage('timeslots')" id="btn-timeslots"
+                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
+                    <i class="fa-solid fa-clock w-5"></i>
+                    <span class="font-medium text-sm">Time Slots</span>
+                </button>
+                <button onclick="showPage('constraints')" id="btn-constraints"
+                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
+                    <i class="fa-solid fa-shield-halved w-5"></i>
+                    <span class="font-medium text-sm">Constraints</span>
+                </button>
                 <div class="h-px bg-border-color my-2 mx-4"></div>
 
                 <button onclick="showPage('conflicts')" id="btn-conflicts"
@@ -113,6 +130,29 @@
                     class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
                     <i class="fa-solid fa-building-columns w-5"></i>
                     <span class="font-medium text-sm">Institution Rules</span>
+                </button>
+                <button onclick="showPage('faculty-leaves')" id="btn-faculty-leaves"
+                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
+                    <i class="fa-solid fa-person-walking-arrow-right w-5"></i>
+                    <span class="font-medium text-sm">Faculty Leaves</span>
+                </button>
+                <button onclick="showPage('slot-locks')" id="btn-slot-locks"
+                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
+                    <i class="fa-solid fa-lock w-5"></i>
+                    <span class="font-medium text-sm">Slot Locks</span>
+                </button>
+                <div class="h-px bg-border-color my-2 mx-4"></div>
+
+                <p class="px-4 text-xs font-bold text-text-muted uppercase tracking-wider mb-2 mt-4">Admin</p>
+                <button onclick="showPage('users')" id="btn-users"
+                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
+                    <i class="fa-solid fa-user-gear w-5"></i>
+                    <span class="font-medium text-sm">User Management</span>
+                </button>
+                <button onclick="showPage('audit-logs')" id="btn-audit-logs"
+                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
+                    <i class="fa-solid fa-clipboard-list w-5"></i>
+                    <span class="font-medium text-sm">Audit Logs</span>
                 </button>
 
                 <div class="mt-auto pt-4 pb-4">
@@ -181,67 +221,6 @@
                 </div>
             </div>
 
-            <!-- FACULTY PAGE -->
-            <div id="page-faculty" class="page-content p-8 hidden">
-                <div class="flex justify-between items-center mb-8">
-                    <div>
-                        <h2 class="text-3xl font-extrabold text-text-main">Faculty & Workload</h2>
-                        <p class="text-text-muted">Assign hours and monitor capacity limits.</p>
-                    </div>
-                    <button onclick="toggleModal('modal-faculty', true)"
-                        class="bg-red-700 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-all shadow-lg shadow-red-900/20 font-semibold flex items-center gap-2 neon-border">
-                        <i class="fa-solid fa-plus"></i> New Faculty
-                    </button>
-                </div>
-
-                <div class="bg-card rounded-2xl border border-border-color shadow-sm overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="bg-main border-b border-border-color">
-                            <tr>
-                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Faculty Member</th>
-                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Department</th>
-                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Subject</th>
-                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase text-right">Workload
-                                    Progress</th>
-                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase text-center">Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="faculty-list" class="divide-y divide-border-color"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- STUDENT PAGE -->
-            <div id="page-student" class="page-content p-8 hidden">
-                <div class="flex justify-between items-center mb-8">
-                    <div>
-                        <h2 class="text-3xl font-extrabold text-text-main">Student Directory</h2>
-                        <p class="text-text-muted">Manage student enrollment and batch details.</p>
-                    </div>
-                    <button onclick="toggleModal('modal-student', true)"
-                        class="bg-red-700 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-all shadow-lg shadow-red-900/20 font-semibold flex items-center gap-2 neon-border">
-                        <i class="fa-solid fa-plus"></i> New Student
-                    </button>
-                </div>
-
-                <div class="bg-card rounded-2xl border border-border-color shadow-sm overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="bg-main border-b border-border-color">
-                            <tr>
-                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Student Name</th>
-                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Roll No</th>
-                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Details (Dept/Batch)
-                                </th>
-                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Section</th>
-                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase text-center">Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="student-list" class="divide-y divide-border-color"></tbody>
-                    </table>
-                </div>
-            </div>
 
             <!-- ROOMS PAGE -->
             <div id="page-rooms" class="page-content p-8 hidden">
@@ -269,6 +248,69 @@
                             </tr>
                         </thead>
                         <tbody id="room-list" class="divide-y divide-border-color"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FACULTY PREFERENCES PAGE -->
+            <div id="page-faculty-preferences" class="page-content p-8 hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-text-main">Faculty Preferences</h2>
+                        <p class="text-text-muted">Manage time and day preferences for faculty scheduling.</p>
+                    </div>
+                    <button onclick="toggleModal('modal-faculty-preference', true)"
+                        class="bg-red-700 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-all shadow-lg shadow-red-900/20 font-semibold flex items-center gap-2 neon-border">
+                        <i class="fa-solid fa-plus"></i> Add Preference
+                    </button>
+                </div>
+
+                <div class="bg-card rounded-2xl border border-border-color shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-main border-b border-border-color">
+                            <tr>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Faculty ID</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Day</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Time Range</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Weight</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Semester</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase text-center">Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="faculty-preferences-list" class="divide-y divide-border-color"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FACULTY COURSES PAGE -->
+            <div id="page-faculty-courses" class="page-content p-8 hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-text-main">Faculty Course Assignments</h2>
+                        <p class="text-text-muted">Manage mapping of faculty to multiple courses/sections.</p>
+                    </div>
+                    <button onclick="toggleModal('modal-faculty-course', true)"
+                        class="bg-red-700 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-all shadow-lg shadow-red-900/20 font-semibold flex items-center gap-2 neon-border">
+                        <i class="fa-solid fa-plus"></i> Assign Course
+                    </button>
+                </div>
+
+                <div class="bg-card rounded-2xl border border-border-color shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-main border-b border-border-color">
+                            <tr>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Faculty Name</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Course</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Section</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Semester</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Hours Assigned</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Primary</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase text-center">Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="faculty-courses-list" class="divide-y divide-border-color"></tbody>
                     </table>
                 </div>
             </div>
@@ -602,16 +644,304 @@
                     </table>
                 </div>
             </div>
+
+            <!-- ELECTIVE GROUPS PAGE -->
+            <div id="page-elective-groups" class="page-content p-8 hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-text-main">Elective Groups</h2>
+                        <p class="text-text-muted">Manage elective group clusters for cross-department courses.</p>
+                    </div>
+                    <button onclick="toggleModal('modal-elective-group', true)"
+                        class="bg-red-700 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-all shadow-lg shadow-red-900/20 font-semibold flex items-center gap-2 neon-border">
+                        <i class="fa-solid fa-plus"></i> New Elective Group
+                    </button>
+                </div>
+                <div class="bg-card rounded-2xl border border-border-color shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-main border-b border-border-color">
+                            <tr>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">ID</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Group Name</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Description</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Departments</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase text-center">Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="elective-groups-list" class="divide-y divide-border-color"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TIME SLOTS PAGE -->
+            <div id="page-timeslots" class="page-content p-8 hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-text-main">Time Slot Manager</h2>
+                        <p class="text-text-muted">Configure daily time slots and breaks for scheduling.</p>
+                    </div>
+                    <button onclick="toggleModal('modal-timeslot', true)"
+                        class="bg-red-700 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-all shadow-lg shadow-red-900/20 font-semibold flex items-center gap-2 neon-border">
+                        <i class="fa-solid fa-plus"></i> New Time Slot
+                    </button>
+                </div>
+                <div class="mb-4 flex gap-3">
+                    <select id="ts-filter-day" onchange="loadTimeSlots()"
+                        class="bg-main border border-border-color rounded-lg px-3 py-2 text-sm font-bold text-text-main outline-none focus:ring-1 ring-red-500">
+                        <option value="">All Days</option>
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                        <option value="Saturday">Saturday</option>
+                    </select>
+                </div>
+                <div class="bg-card rounded-2xl border border-border-color shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-main border-b border-border-color">
+                            <tr>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Day</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Start Time</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">End Time</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Duration</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Type</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase text-center">Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="timeslots-list" class="divide-y divide-border-color"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CONSTRAINTS PAGE -->
+            <div id="page-constraints" class="page-content p-8 hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-text-main">Scheduling Constraints</h2>
+                        <p class="text-text-muted">Define hard and soft constraints for the timetable solver.</p>
+                    </div>
+                    <button onclick="toggleModal('modal-constraint', true)"
+                        class="bg-red-700 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-all shadow-lg shadow-red-900/20 font-semibold flex items-center gap-2 neon-border">
+                        <i class="fa-solid fa-plus"></i> New Constraint
+                    </button>
+                </div>
+                <div class="bg-card rounded-2xl border border-border-color shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-main border-b border-border-color">
+                            <tr>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Name</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Type</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Category</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Priority</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Hard/Soft</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase text-center">Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="constraints-list" class="divide-y divide-border-color"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FACULTY LEAVES PAGE -->
+            <div id="page-faculty-leaves" class="page-content p-8 hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-text-main">Faculty Leave Management</h2>
+                        <p class="text-text-muted">Track and approve faculty leave requests with impact analysis.</p>
+                    </div>
+                    <button onclick="toggleModal('modal-leave', true)"
+                        class="bg-red-700 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-all shadow-lg shadow-red-900/20 font-semibold flex items-center gap-2 neon-border">
+                        <i class="fa-solid fa-plus"></i> New Leave Request
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-card p-6 rounded-2xl border border-border-color shadow-sm">
+                        <h3 class="text-text-muted text-xs font-bold uppercase tracking-wider mb-2">Pending</h3>
+                        <span class="text-3xl font-black text-text-main" id="stat-leaves-pending">0</span>
+                    </div>
+                    <div class="bg-card p-6 rounded-2xl border border-border-color shadow-sm">
+                        <h3 class="text-text-muted text-xs font-bold uppercase tracking-wider mb-2">Approved</h3>
+                        <span class="text-3xl font-black text-text-main" id="stat-leaves-approved">0</span>
+                    </div>
+                    <div class="bg-card p-6 rounded-2xl border border-border-color shadow-sm">
+                        <h3 class="text-text-muted text-xs font-bold uppercase tracking-wider mb-2">Rejected</h3>
+                        <span class="text-3xl font-black text-text-main" id="stat-leaves-rejected">0</span>
+                    </div>
+                </div>
+                <div class="bg-card rounded-2xl border border-border-color shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-main border-b border-border-color">
+                            <tr>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Faculty</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Leave Type</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Start Date</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">End Date</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Status</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase text-center">Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaves-list" class="divide-y divide-border-color"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SLOT LOCKS PAGE -->
+            <div id="page-slot-locks" class="page-content p-8 hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-text-main">Slot Locking Manager</h2>
+                        <p class="text-text-muted">Lock specific timetable slots to prevent regeneration changes.</p>
+                    </div>
+                </div>
+                <div class="bg-card p-6 rounded-2xl border border-border-color shadow-sm mb-8">
+                    <h3 class="text-xs font-bold text-red-400 uppercase mb-4 tracking-widest neon-text">Lock / Unlock
+                        Slots</h3>
+                    <div class="flex flex-wrap items-end gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-text-muted uppercase mb-2">Timetable</label>
+                            <select id="lock-timetable-id"
+                                class="bg-main border border-border-color rounded-lg px-3 py-2 text-sm font-bold text-text-main outline-none focus:ring-1 ring-red-500">
+                                <option value="">Select Timetable</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-text-muted uppercase mb-2">Slot IDs (comma
+                                separated)</label>
+                            <input type="text" id="lock-slot-ids"
+                                class="bg-main border border-border-color rounded-lg px-3 py-2 text-sm font-bold text-text-main outline-none focus:ring-1 ring-red-500"
+                                placeholder="e.g. 1,2,3">
+                        </div>
+                        <button onclick="lockSlots()"
+                            class="bg-red-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-red-900/40 hover:bg-red-600 transition-all flex items-center gap-2 neon-border">
+                            <i class="fa-solid fa-lock"></i> Lock
+                        </button>
+                        <button onclick="unlockSlots()"
+                            class="bg-card border border-red-500/30 text-red-400 px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-red-500/10 transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-lock-open"></i> Unlock
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-card rounded-2xl border border-border-color shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-border-color">
+                        <h3 class="font-bold text-lg text-text-main">Currently Locked Slots</h3>
+                    </div>
+                    <table class="w-full text-left">
+                        <thead class="bg-main border-b border-border-color">
+                            <tr>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Slot ID</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Day</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Time</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Course</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Room</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase text-center">Status
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="locked-slots-list" class="divide-y divide-border-color"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- USER MANAGEMENT PAGE -->
+            <div id="page-users" class="page-content p-8 hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-text-main">User Management</h2>
+                        <p class="text-text-muted">Create, view, and manage system user accounts.</p>
+                    </div>
+                    <button onclick="toggleModal('modal-user', true)"
+                        class="bg-red-700 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-all shadow-lg shadow-red-900/20 font-semibold flex items-center gap-2 neon-border">
+                        <i class="fa-solid fa-plus"></i> New User
+                    </button>
+                </div>
+                <div class="mb-4 flex gap-3">
+                    <select id="user-filter-role" onchange="loadUsers()"
+                        class="bg-main border border-border-color rounded-lg px-3 py-2 text-sm font-bold text-text-main outline-none focus:ring-1 ring-red-500">
+                        <option value="">All Roles</option>
+                        <option value="admin">Admin</option>
+                        <option value="faculty">Faculty</option>
+                        <option value="student">Student</option>
+                    </select>
+                </div>
+                <div class="bg-card rounded-2xl border border-border-color shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-main border-b border-border-color">
+                            <tr>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Username</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Full Name</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Email</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Role</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Active</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase text-center">Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-list" class="divide-y divide-border-color"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- AUDIT LOGS PAGE -->
+            <div id="page-audit-logs" class="page-content p-8 hidden">
+                <header class="mb-8">
+                    <h2 class="text-3xl font-extrabold text-text-main">Audit Logs</h2>
+                    <p class="text-text-muted mt-1">Review all system actions and changes for compliance.</p>
+                </header>
+                <div class="mb-4 flex flex-wrap gap-3">
+                    <select id="audit-filter-entity" onchange="loadAuditLogs()"
+                        class="bg-main border border-border-color rounded-lg px-3 py-2 text-sm font-bold text-text-main outline-none focus:ring-1 ring-red-500">
+                        <option value="">All Entities</option>
+                        <option value="user">User</option>
+                        <option value="course">Course</option>
+                        <option value="semester">Semester</option>
+                        <option value="department">Department</option>
+                        <option value="room">Room</option>
+                        <option value="timetable">Timetable</option>
+                        <option value="constraint">Constraint</option>
+                    </select>
+                    <select id="audit-filter-action" onchange="loadAuditLogs()"
+                        class="bg-main border border-border-color rounded-lg px-3 py-2 text-sm font-bold text-text-main outline-none focus:ring-1 ring-red-500">
+                        <option value="">All Actions</option>
+                        <option value="create">Create</option>
+                        <option value="update">Update</option>
+                        <option value="delete">Delete</option>
+                        <option value="login">Login</option>
+                    </select>
+                    <input type="date" id="audit-filter-start"
+                        class="bg-main border border-border-color rounded-lg px-3 py-2 text-sm font-bold text-text-main outline-none focus:ring-1 ring-red-500"
+                        placeholder="Start Date">
+                    <input type="date" id="audit-filter-end"
+                        class="bg-main border border-border-color rounded-lg px-3 py-2 text-sm font-bold text-text-main outline-none focus:ring-1 ring-red-500"
+                        placeholder="End Date">
+                    <button onclick="loadAuditLogs()"
+                        class="bg-card border border-border-color text-text-muted px-4 py-2 rounded-lg text-sm font-bold hover:bg-main shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-filter"></i> Filter
+                    </button>
+                </div>
+                <div class="bg-card rounded-2xl border border-border-color shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-main border-b border-border-color">
+                            <tr>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Timestamp</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">User</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Action</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Entity</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-logs-list" class="divide-y divide-border-color"></tbody>
+                    </table>
+                </div>
+            </div>
+
         </main>
     </div>
 
-    <script src="app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initial load
-            showPage('overview');
-        });
-    </script>
     <!-- MODALS -->
     <!-- (Retaining existing modal structures but with updated classes) -->
 
@@ -987,8 +1317,342 @@
         </div>
     </div>
 
+    <!-- Elective Group Modal -->
+    <div id="modal-elective-group" class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-card w-full max-w-md rounded-3xl shadow-2xl border border-border-color overflow-hidden animate-in zoom-in duration-300">
+            <div class="p-8 border-b border-border-color">
+                <h3 class="text-xl font-bold text-text-main">Add Elective Group</h3>
+            </div>
+            <div class="p-8 space-y-4">
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Group Name</label><input
+                        type="text" id="eg-name"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
+                        placeholder="e.g. PE1"></div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Description</label><textarea
+                        id="eg-desc"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
+                        rows="2"></textarea></div>
+            </div>
+            <div class="p-8 bg-main flex gap-3"><button onclick="toggleModal('modal-elective-group', false)"
+                    class="flex-1 px-4 py-3 font-bold text-text-muted hover:text-text-main">Cancel</button><button
+                    onclick="saveElectiveGroup()"
+                    class="flex-1 bg-red-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors">Add
+                    Group</button></div>
+        </div>
+    </div>
+
+    <!-- Time Slot Modal -->
+    <div id="modal-timeslot" class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-card w-full max-w-md rounded-3xl shadow-2xl border border-border-color overflow-hidden animate-in zoom-in duration-300">
+            <div class="p-8 border-b border-border-color">
+                <h3 class="text-xl font-bold text-text-main">Add Time Slot</h3>
+            </div>
+            <div class="p-8 space-y-4">
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Day of Week</label>
+                    <select id="ts-day"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                        <option value="Saturday">Saturday</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Start Time</label><input
+                            type="time" id="ts-start"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"></div>
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">End Time</label><input
+                            type="time" id="ts-end"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Duration
+                            (min)</label><input type="number" id="ts-duration" value="60"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"></div>
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Slot Type</label><input
+                            type="text" id="ts-type" value="regular"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
+                            placeholder="regular"></div>
+                </div>
+                <div class="pt-2"><label class="flex items-center gap-2 text-sm font-semibold text-text-muted"><input
+                            type="checkbox" id="ts-break"
+                            class="w-4 h-4 text-red-500 rounded bg-main border-border-color"> Break Slot</label></div>
+            </div>
+            <div class="p-8 bg-main flex gap-3"><button onclick="toggleModal('modal-timeslot', false)"
+                    class="flex-1 px-4 py-3 font-bold text-text-muted hover:text-text-main">Cancel</button><button
+                    onclick="saveTimeSlot()"
+                    class="flex-1 bg-red-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors">Add
+                    Time Slot</button></div>
+        </div>
+    </div>
+
+    <!-- Constraint Modal -->
+    <div id="modal-constraint" class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-card w-full max-w-2xl rounded-3xl shadow-2xl border border-border-color overflow-hidden animate-in zoom-in duration-300">
+            <div class="p-8 border-b border-border-color">
+                <h3 class="text-xl font-bold text-text-main">Add Constraint</h3>
+            </div>
+            <div class="p-8 space-y-4">
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Constraint Name</label><input
+                        type="text" id="con-name"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
+                        placeholder="e.g. No faculty double booking"></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Constraint Type</label>
+                        <select id="con-type"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                            <option value="NO_FACULTY_CLASH">No Faculty Clash</option>
+                            <option value="NO_ROOM_CLASH">No Room Clash</option>
+                            <option value="NO_STUDENT_CLASH">No Student Clash</option>
+                            <option value="WORKLOAD_LIMIT">Workload Limit</option>
+                            <option value="ROOM_CAPACITY">Room Capacity</option>
+                            <option value="LAB_REQUIREMENT">Lab Requirement</option>
+                            <option value="PREFERENCE_TIME">Preference Time</option>
+                            <option value="PREFERENCE_DAY">Preference Day</option>
+                            <option value="MAX_CONSECUTIVE">Max Consecutive</option>
+                            <option value="MIN_BREAK">Min Break</option>
+                            <option value="MAX_COMMUTE">Max Commute</option>
+                            <option value="ELECTIVE_NO_CLASH">Elective No Clash</option>
+                        </select>
+                    </div>
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Category</label><input
+                            type="text" id="con-category"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
+                            placeholder="institutional"></div>
+                </div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Rule
+                        Definition</label><textarea id="con-rule"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main" rows="2"
+                        placeholder="Describe what this constraint enforces"></textarea></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Priority
+                            (0-1000)</label><input type="number" id="con-priority" value="100"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"></div>
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Weight
+                            (0-1)</label><input type="number" id="con-weight" value="1.0" step="0.1"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"></div>
+                </div>
+                <div class="pt-2"><label class="flex items-center gap-2 text-sm font-semibold text-text-muted"><input
+                            type="checkbox" id="con-hard" checked
+                            class="w-4 h-4 text-red-500 rounded bg-main border-border-color"> Hard Constraint
+                        (Required)</label></div>
+            </div>
+            <div class="p-8 bg-main flex gap-3"><button onclick="toggleModal('modal-constraint', false)"
+                    class="flex-1 px-4 py-3 font-bold text-text-muted hover:text-text-main">Cancel</button><button
+                    onclick="saveConstraint()"
+                    class="flex-1 bg-red-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors">Add
+                    Constraint</button></div>
+        </div>
+    </div>
+
+    <!-- Leave Request Modal -->
+    <div id="modal-leave" class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-card w-full max-w-md rounded-3xl shadow-2xl border border-border-color overflow-hidden animate-in zoom-in duration-300">
+            <div class="p-8 border-b border-border-color">
+                <h3 class="text-xl font-bold text-text-main">New Leave Request</h3>
+            </div>
+            <div class="p-8 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Faculty</label>
+                        <select id="leave-faculty"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                            <option value="">Select Faculty</option>
+                        </select>
+                    </div>
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Timetable</label>
+                        <select id="leave-timetable"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                            <option value="">Select Timetable</option>
+                        </select>
+                    </div>
+                </div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Leave Type</label>
+                    <select id="leave-type"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="SICK">Sick</option>
+                        <option value="CASUAL">Casual</option>
+                        <option value="VACATION">Vacation</option>
+                        <option value="CONFERENCE">Conference</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Start Date</label><input
+                            type="date" id="leave-start"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"></div>
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">End Date</label><input
+                            type="date" id="leave-end"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"></div>
+                </div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Semester</label>
+                    <select id="leave-semester"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="">Select Semester</option>
+                    </select>
+                </div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Reason</label><textarea
+                        id="leave-reason"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
+                        rows="2"></textarea></div>
+            </div>
+            <div class="p-8 bg-main flex gap-3"><button onclick="toggleModal('modal-leave', false)"
+                    class="flex-1 px-4 py-3 font-bold text-text-muted hover:text-text-main">Cancel</button><button
+                    onclick="saveLeave()"
+                    class="flex-1 bg-red-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors">Submit
+                    Leave</button></div>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div id="modal-user" class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-card w-full max-w-md rounded-3xl shadow-2xl border border-border-color overflow-hidden animate-in zoom-in duration-300">
+            <div class="p-8 border-b border-border-color">
+                <h3 class="text-xl font-bold text-text-main">Create New User</h3>
+            </div>
+            <div class="p-8 space-y-4">
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Username</label><input
+                        type="text" id="user-username"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
+                        placeholder="e.g. john_doe"></div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Full Name</label><input
+                        type="text" id="user-fullname"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
+                        placeholder="e.g. John Doe"></div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Email</label><input
+                        type="email" id="user-email"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
+                        placeholder="e.g. john@university.edu"></div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Password</label><input
+                        type="password" id="user-password"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
+                        placeholder="Min 8 chars"></div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Role</label>
+                    <select id="user-role"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="admin">Admin</option>
+                        <option value="faculty">Faculty</option>
+                        <option value="student">Student</option>
+                    </select>
+                </div>
+            </div>
+            <div class="p-8 bg-main flex gap-3"><button onclick="toggleModal('modal-user', false)"
+                    class="flex-1 px-4 py-3 font-bold text-text-muted hover:text-text-main">Cancel</button><button
+                    onclick="saveUser()"
+                    class="flex-1 bg-red-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors">Create
+                    User</button></div>
+        </div>
+    </div>
+
+    <!-- Faculty Preference Modal -->
+    <div id="modal-faculty-preference"
+        class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-card w-full max-w-md rounded-3xl shadow-2xl border border-border-color overflow-hidden animate-in zoom-in duration-300">
+            <div class="p-8 border-b border-border-color">
+                <h3 class="text-xl font-bold text-text-main">Add Faculty Preference</h3>
+            </div>
+            <div class="p-8 space-y-4">
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Faculty</label>
+                    <select id="fp-faculty"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="">Select Faculty</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Day of Week</label>
+                        <select id="fp-day"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                            <option value="0">Monday</option>
+                            <option value="1">Tuesday</option>
+                            <option value="2">Wednesday</option>
+                            <option value="3">Thursday</option>
+                            <option value="4">Friday</option>
+                            <option value="5">Saturday</option>
+                            <option value="6">Sunday</option>
+                        </select>
+                    </div>
+                    <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Time Slot</label>
+                        <select id="fp-timeslot"
+                            class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                            <option value="">Select Time Slot</option>
+                        </select>
+                    </div>
+                </div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Preference Type</label>
+                    <select id="fp-type"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="preferred">Preferred</option>
+                        <option value="not_available">Not Available</option>
+                    </select>
+                </div>
+            </div>
+            <div class="p-8 bg-main flex gap-3"><button onclick="toggleModal('modal-faculty-preference', false)"
+                    class="flex-1 px-4 py-3 font-bold text-text-muted hover:text-text-main">Cancel</button><button
+                    onclick="saveFacultyPreference()"
+                    class="flex-1 bg-red-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors">Save
+                    Filter</button></div>
+        </div>
+    </div>
+
+    <!-- Faculty Course Assignment Modal -->
+    <div id="modal-faculty-course" class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-card w-full max-w-md rounded-3xl shadow-2xl border border-border-color overflow-hidden animate-in zoom-in duration-300">
+            <div class="p-8 border-b border-border-color">
+                <h3 class="text-xl font-bold text-text-main">Assign Course to Faculty</h3>
+            </div>
+            <div class="p-8 space-y-4">
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Faculty</label>
+                    <select id="fc-faculty"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="">Select Faculty</option>
+                    </select>
+                </div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Course</label>
+                    <select id="fc-course"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="">Select Course</option>
+                    </select>
+                </div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Section (Optional)</label>
+                    <select id="fc-section"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="">Select Section (or leave blank for generic course)</option>
+                    </select>
+                </div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Semester</label>
+                    <select id="fc-semester"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="">Select Semester</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="flex items-center pt-2"><label
+                            class="flex items-center gap-2 text-sm font-semibold text-text-muted"><input type="checkbox"
+                                id="fc-primary" checked
+                                class="w-4 h-4 text-red-500 rounded bg-main border-border-color"> Primary
+                            Instructor</label></div>
+                </div>
+            </div>
+            <div class="p-8 bg-main flex gap-3"><button onclick="toggleModal('modal-faculty-course', false)"
+                    class="flex-1 px-4 py-3 font-bold text-text-muted hover:text-text-main">Cancel</button><button
+                    onclick="saveFacultyCourse()"
+                    class="flex-1 bg-red-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors">Assign
+                    Course</button></div>
+        </div>
+    </div>
+
     <!-- SCRIPTS -->
+    <script src="../api-client.js"></script>
     <script src="app.js"></script>
+    <script src="admin-pages.js"></script>
 
 </body>
 

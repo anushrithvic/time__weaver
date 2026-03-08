@@ -36,37 +36,14 @@ function showPage(pageId) {
         loadSections();
     }
     if (pageId === 'rooms') loadRooms();
-    if (pageId === 'faculty') loadFaculty();
-    if (pageId === 'student') loadStudents();
     if (pageId === 'institution') loadRules();
 }
 
-async function loadFaculty() {
-    try {
-        const response = await fetch(`${API_BASE}/users/?role=faculty`);
-        facultyData = await response.json();
-        renderFaculty();
-        updateStats();
-    } catch (error) {
-        console.error('Error loading faculty:', error);
-    }
-}
-
-async function loadStudents() {
-    try {
-        const response = await fetch(`${API_BASE}/users/?role=student`);
-        studentData = await response.json();
-        renderStudents();
-        updateStats();
-    } catch (error) {
-        console.error('Error loading students:', error);
-    }
-}
+// Faculty and Student loads are now handled by loadUsers in admin-pages.js
 
 async function loadRooms() {
     try {
-        const response = await fetch(`${API_BASE}/rooms/`);
-        roomData = await response.json();
+        roomData = await API.get('/rooms/');
         renderRooms();
     } catch (error) {
         console.error('Error loading rooms:', error);
@@ -75,166 +52,18 @@ async function loadRooms() {
 
 async function loadRules() {
     try {
-        const response = await fetch(`${API_BASE}/rules/`);
-        ruleData = await response.json();
+        ruleData = await API.get('/rules/');
         renderRules();
     } catch (error) {
         console.error('Error loading rules:', error);
     }
 }
 
-// --- FACULTY LOGIC ---
-async function saveFaculty() {
-    const name = document.getElementById('fac-name').value;
-    const dept = document.getElementById('fac-dept').value;
-    const role = document.getElementById('fac-role').value;
-    const subject = document.getElementById('fac-subject').value;
-    const max = parseInt(document.getElementById('fac-max').value);
-    const dob = document.getElementById('fac-dob').value;
-
-    if (!name || !subject || !dob) return alert("Please enter name, subject, and date of birth");
-
-    try {
-        const response = await fetch('http://localhost:3000/api/admin/create-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, role: 'faculty', dob })
-        });
-
-        if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Failed to create user credentials');
-        }
-
-        const data = await response.json();
-        alert(`Faculty User Created!\nUsername: ${data.credentials.username}\nPassword: ${data.credentials.password}`);
-
-    } catch (err) {
-        console.error(err);
-        alert("Error creating login credentials: " + err.message);
-        return;
-    }
-
-    facultyData.push({
-        id: Date.now(),
-        name,
-        dept,
-        role,
-        subject,
-        current: 0,
-        max
-    });
-    localStorage.setItem('timeWeaver_faculty', JSON.stringify(facultyData));
-
-    toggleModal('modal-faculty', false);
-    renderFaculty();
-    updateStats();
-}
-
-function deleteFaculty(id) {
-    facultyData = facultyData.filter(f => f.id !== id);
-    localStorage.setItem('timeWeaver_faculty', JSON.stringify(facultyData));
-    renderFaculty();
-    updateStats();
-}
-
-function renderFaculty() {
-    const list = document.getElementById('faculty-list');
-    if (!list) return;
-    list.innerHTML = facultyData.map(f => {
-        const isOver = f.current > f.max;
-        const percent = Math.min((f.current / f.max) * 100, 100);
-        return `
-            <tr class="hover:bg-main transition-colors border-b border-border-color last:border-0">
-                <td class="px-8 py-5">
-                    <div class="font-bold text-text-main">${f.full_name || f.username}</div>
-                    <div class="text-xs text-text-muted font-medium">${f.role || 'Faculty'}</div>
-                </td>
-                <td class="px-8 py-5 text-text-muted text-sm font-medium">${f.department || 'CS'}</td>
-                <td class="px-8 py-5 text-text-muted text-sm font-medium">${f.subject || '-'}</td>
-                <td class="px-8 py-5">
-                    <div class="flex flex-col items-end">
-                        <span class="text-xs font-black mb-2 ${isOver ? 'text-red-400' : 'text-cyan-400'}">${f.current} / ${f.max} HRS</span>
-                        <div class="w-48 h-2 bg-main rounded-full overflow-hidden border border-border-color">
-                            <div class="h-full ${isOver ? 'bg-red-500 vector-glow-red' : 'bg-cyan-500 vector-glow-cyan'} transition-all duration-1000" style="width: ${percent}%"></div>
-                        </div>
-                    </div>
-                </td>
-                <td class="px-8 py-5 text-center">
-                    <button onclick="deleteFaculty(${f.id})" class="text-text-muted hover:text-red-400 transition-colors">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
-
-// --- STUDENT LOGIC ---
-async function saveStudent() {
-    const name = document.getElementById('stu-name').value;
-    const roll = document.getElementById('stu-roll').value;
-    const batch = document.getElementById('stu-batch').value;
-    const dept = document.getElementById('stu-dept').value;
-    const section = document.getElementById('stu-sec').value;
-    const dob = document.getElementById('stu-dob').value;
-
-    if (!name || !roll || !section || !dob) return alert("Please fill all details including DOB");
-
-    try {
-        const response = await fetch('http://localhost:3000/api/admin/create-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, role: 'student', dob })
-        });
-
-        if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Failed to create user credentials');
-        }
-
-        const data = await response.json();
-        alert(`Student User Created!\nUsername: ${data.credentials.username}\nPassword: ${data.credentials.password}`);
-
-    } catch (err) {
-        console.error(err);
-        alert("Error creating login credentials: " + err.message);
-        return;
-    }
-
-    studentData.push({ id: Date.now(), name, roll, batch, dept, section });
-    localStorage.setItem('timeWeaver_students', JSON.stringify(studentData));
-
-    toggleModal('modal-student', false);
-    renderStudents();
-}
-
-function deleteStudent(id) {
-    studentData = studentData.filter(s => s.id !== id);
-    localStorage.setItem('timeWeaver_students', JSON.stringify(studentData));
-    renderStudents();
-}
-
-function renderStudents() {
-    const list = document.getElementById('student-list');
-    if (!list) return;
-    list.innerHTML = studentData.map(s => `
-        <tr class="hover:bg-main transition-colors border-b border-border-color last:border-0">
-            <td class="px-8 py-5 font-bold text-text-main">${s.full_name || s.username}</td>
-            <td class="px-8 py-5 text-text-muted text-sm font-medium">${s.student_id || '-'}</td>
-            <td class="px-8 py-5 text-text-muted text-sm font-medium">${s.department || 'CS'} - ${s.batch || '2026'}</td>
-            <td class="px-8 py-5 text-text-muted text-sm font-medium">Sec-${s.section || 'A'}</td>
-                <td class="px-8 py-5 text-center">
-                <button onclick="deleteStudent(${s.id})" class="text-text-muted hover:text-red-400 transition-colors">
-                    <i class="fa-solid fa-trash-can"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
-}
+// Removed deprecated Faculty and Student JS logic directly handling local storage
+// User CRUD is fully mediated via `admin-pages.js` User Management page
 
 // --- ROOM LOGIC ---
-function saveRoom() {
+async function saveRoom() {
     const building = document.getElementById('room-building').value;
     const number = document.getElementById('room-number').value;
     const type = document.getElementById('room-type').value;
@@ -247,27 +76,35 @@ function saveRoom() {
 
     if (!building || !number || !capacity) return alert("Please fill required fields (Building, Number, Capacity)");
 
-    const newRoom = {
-        id: Date.now(),
-        building,
-        number,
-        fullName: `${building} - ${number}`,
-        type,
-        capacity,
-        features: { hasProjector, hasLab, hasAC }
-    };
-
-    roomData.push(newRoom);
-    localStorage.setItem('timeWeaver_rooms', JSON.stringify(roomData));
-
-    toggleModal('modal-room', false);
-    renderRooms();
+    try {
+        await API.post('/rooms/', {
+            room_number: number,
+            building: building,
+            capacity: capacity,
+            room_type: type,
+            has_projector: hasProjector,
+            has_lab_equipment: hasLab,
+            has_ac: hasAC
+        });
+        toggleModal('modal-room', false);
+        document.getElementById('room-building').value = '';
+        document.getElementById('room-number').value = '';
+        loadRooms();
+    } catch (err) {
+        console.error('Error saving room:', err);
+        alert('Failed to save room details');
+    }
 }
 
-function deleteRoom(id) {
-    roomData = roomData.filter(r => r.id !== id);
-    localStorage.setItem('timeWeaver_rooms', JSON.stringify(roomData));
-    renderRooms();
+async function deleteRoom(id) {
+    if (!confirm('Are you sure you want to delete this room?')) return;
+    try {
+        await API.del(`/rooms/${id}`);
+        loadRooms();
+    } catch (err) {
+        console.error('Error deleting room:', err);
+        alert('Failed to delete room');
+    }
 }
 
 function renderRooms() {
@@ -307,7 +144,7 @@ function saveInstitution() {
     document.title = `${name} Admin | v1.0`;
 }
 
-function saveRule() {
+async function saveRule() {
     const name = document.getElementById('rule-name').value;
     const type = document.getElementById('rule-type').value;
     const weight = document.getElementById('rule-weight').value;
@@ -316,27 +153,34 @@ function saveRule() {
 
     if (!name) return alert("Rule Name is required");
 
-    const newRule = {
-        id: Date.now(),
-        name,
-        type,
-        weight,
-        description: desc,
-        isHard,
-        isActive: true
-    };
-
-    ruleData.push(newRule);
-    localStorage.setItem('timeWeaver_rules', JSON.stringify(ruleData));
-
-    toggleModal('modal-rule', false);
-    renderRules();
+    try {
+        await API.post('/rules/', {
+            name: name,
+            rule_type: type,
+            description: desc,
+            weight: parseFloat(weight) || 1.0,
+            is_hard_constraint: isHard,
+            is_active: true
+        });
+        toggleModal('modal-rule', false);
+        document.getElementById('rule-name').value = '';
+        document.getElementById('rule-desc').value = '';
+        loadRules();
+    } catch (err) {
+        console.error('Error saving rule:', err);
+        alert('Failed to save rule');
+    }
 }
 
-function deleteRule(id) {
-    ruleData = ruleData.filter(r => r.id !== id);
-    localStorage.setItem('timeWeaver_rules', JSON.stringify(ruleData));
-    renderRules();
+async function deleteRule(id) {
+    if (!confirm('Are you sure you want to delete this rule?')) return;
+    try {
+        await API.del(`/rules/${id}`);
+        loadRules();
+    } catch (err) {
+        console.error('Error deleting rule:', err);
+        alert('Failed to delete rule');
+    }
 }
 
 function renderRules() {
@@ -371,28 +215,34 @@ function loadInstitution() {
     renderRules();
 }
 
-function updateStats() {
-    // 1. Total Faculty
-    if (document.getElementById('stat-faculty-count')) {
-        document.getElementById('stat-faculty-count').innerText = facultyData.length;
-    }
+async function updateStats() {
+    try {
+        // 1. Total Faculty
+        if (document.getElementById('stat-faculty-count')) {
+            const facReq = await API.get('/users/?role=faculty');
+            document.getElementById('stat-faculty-count').innerText = Array.isArray(facReq) ? facReq.length : (facReq.total || 0);
+        }
 
-    // 2. Total Students
-    if (document.getElementById('stat-student-count')) {
-        document.getElementById('stat-student-count').innerText = studentData.length;
-    }
+        // 2. Total Students
+        if (document.getElementById('stat-student-count')) {
+            const stuReq = await API.get('/users/?role=student');
+            document.getElementById('stat-student-count').innerText = Array.isArray(stuReq) ? stuReq.length : (stuReq.total || 0);
+        }
 
-    // 3. Critical Conflicts (from mockConflicts)
-    const critConflicts = mockConflicts.filter(c => c.severity === 'critical' && c.status === 'open').length;
-    if (document.getElementById('stat-critical-conflicts')) {
-        document.getElementById('stat-critical-conflicts').innerText = critConflicts;
-    }
+        // 3. Critical Conflicts
+        const critConflicts = mockConflicts.filter(c => c.severity === 'critical' && c.status === 'open').length;
+        if (document.getElementById('stat-critical-conflicts')) {
+            document.getElementById('stat-critical-conflicts').innerText = critConflicts;
+        }
 
-    // 4. Pending Leave Requests (from localStorage)
-    const leaves = JSON.parse(localStorage.getItem('timeWeaver_leaves')) || [];
-    const pendingLeaves = leaves.filter(l => l.status === 'Pending').length;
-    if (document.getElementById('stat-pending-leaves')) {
-        document.getElementById('stat-pending-leaves').innerText = pendingLeaves;
+        // 4. Pending Leave Requests
+        if (document.getElementById('stat-pending-leaves')) {
+            const leavesReq = await API.get('/faculty-leaves/');
+            const leavesArray = Array.isArray(leavesReq) ? leavesReq : (leavesReq.data || []);
+            document.getElementById('stat-pending-leaves').innerText = leavesArray.filter(l => l.status === 'PENDING').length;
+        }
+    } catch (err) {
+        console.error("Error updating dashboard stats: ", err);
     }
 }
 
@@ -414,23 +264,15 @@ async function generateTimetable(mode) {
     if (!confirm(`Are you sure you want to ${mode} the schedule for ${program} ${dept} Sem-${sem} Sec-${section}? This will rely on the backend constraints.`)) return;
 
     try {
-        // Find correct semester by parsing
-        // In a real app we'd map this, assuming semester_id = sem for demo
-        const response = await fetch(`${API_BASE}/timetables/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ semester_id: parseInt(sem) || 1, num_solutions: 1 })
+        await API.post('/timetables/generate', {
+            semester_id: parseInt(sem) || 1,
+            num_solutions: 1
         });
-
-        if (response.ok) {
-            alert("Timetable generation request sent to backend!");
-            loadTimetable(true);
-        } else {
-            console.error(await response.json());
-            alert("Generation failed, please check backend logs.");
-        }
+        alert("Timetable generation request sent to backend!");
+        loadTimetable(true);
     } catch (error) {
         console.error('Error generating timetable:', error);
+        alert("Generation failed, please check backend logs.");
     }
 }
 
@@ -445,8 +287,7 @@ async function loadTimetable(isFiltered = false) {
 
     try {
         // We fetch all for demo. In prod, we'd use ?semester_id=..
-        const response = await fetch(`${API_BASE}/timetables/`);
-        const fetchedData = await response.json();
+        const fetchedData = await API.get('/timetables/');
 
         // We'll map the backend timetable structure to the frontend structure if needed
         // The exact structure of GET /timetables/ depends on the backend, assuming it returns an array of slots or timetables.

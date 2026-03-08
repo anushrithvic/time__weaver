@@ -2,62 +2,60 @@
 
 let currentUser = null;
 let timetableData = [];
-let facultyList = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    // Only proceed if authenticated
+    if (!API.isAuthenticated()) {
+        window.location.href = '../login.html';
+        return;
+    }
     loadData();
-    initLogin();
 });
 
-function loadData() {
-    facultyList = JSON.parse(localStorage.getItem('timeWeaver_faculty')) || [];
-    timetableData = JSON.parse(localStorage.getItem('timeWeaver_timetable')) || [];
-}
+async function loadData() {
+    try {
+        currentUser = await API.getCurrentUser();
+        if (!currentUser) {
+            API.logout();
+            return;
+        }
 
-function initLogin() {
-    const select = document.getElementById('user-select');
-
-    if (facultyList.length === 0) {
-        // Fallback if no data
-        facultyList = [{ id: 1, name: "Dr. Sarah Thorne", dept: "CS", max: 18 }];
-    }
-
-    select.innerHTML = facultyList.map(f =>
-        `<option value="${f.id}">${f.name}</option>`
-    ).join('');
-
-    // Check if previously logged in (mock session)
-    // For now, simpler to always ask, or just default to first
-    // document.getElementById('login-modal').classList.remove('hidden');
-}
-
-function login() {
-    const select = document.getElementById('user-select');
-    const selectedId = select.value;
-    currentUser = facultyList.find(f => f.id == selectedId);
-
-    if (currentUser) {
+        // Hide login modal since user is legit
         document.getElementById('login-modal').classList.add('hidden');
         updateUI();
-    }
-}
 
-function logout() {
-    currentUser = null;
-    document.getElementById('login-modal').classList.remove('hidden');
+        const fetchedData = await API.get('/timetables/');
+        if (fetchedData && fetchedData.length > 0 && fetchedData[0].slots) {
+            myClasses = fetchedData[0].slots.map(s => ({
+                day: s.day_of_week,
+                time: s.start_time.substring(0, 5),
+                subject: s.course_name || s.subject || 'Course',
+                faculty: s.faculty_name || s.faculty || 'Faculty',
+                room: s.room_name || s.room || 'Room'
+            }));
+
+            // Optionally filter for the current faculty here if backend didn't
+            if (currentUser.full_name) {
+                myClasses = myClasses.filter(c => c.faculty === currentUser.full_name || c.faculty === currentUser.username);
+            }
+        } else {
+            myClasses = [];
+        }
+    } catch (error) {
+        console.error("Error loading faculty data:", error);
+    }
 }
 
 function updateUI() {
     // Update Sidebar Profile
-    document.getElementById('current-user-name').innerText = currentUser.name;
+    document.getElementById('current-user-name').innerText = currentUser.full_name || currentUser.username;
 
-    // Calculate Stats
-    const myClasses = timetableData.filter(t => t.faculty === currentUser.name);
-    const currentLoad = myClasses.length;
+    // Calculate Stats - To be refined when real timetable API is wired
+    const currentLoad = 0; // Replace with length from API data
 
     document.getElementById('stat-current-load').innerText = currentLoad;
-    document.getElementById('stat-max-load').innerText = currentUser.max || 18;
+    document.getElementById('stat-max-load').innerText = 18;
 
     const loadPercent = Math.min((currentLoad / (currentUser.max || 18)) * 100, 100);
     document.getElementById('load-bar').style.width = `${loadPercent}%`;
@@ -126,4 +124,61 @@ function showPage(pageId) {
 
 function printSchedule() {
     window.print();
+}
+
+// Modal generic toggler
+async function toggleModal(modalId, show = true) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    if (show) {
+        modal.classList.remove('hidden');
+        if (modalId === 'modal-leave') {
+            await populateLeaveDropdowns();
+        }
+    } else {
+        modal.classList.add('hidden');
+    }
+}
+
+// Populate Leave Dropdowns for Modal
+async function populateLeaveDropdowns() {
+    try {
+        const semResp = await API.get('/semesters/');
+        const sel = document.getElementById('leave-semester');
+        if (sel) {
+            sel.innerHTML = '<option value="">Select Semester</option>' +
+                semResp.map(s => `<option value="${s.id}">Sem ${s.semester_number} (${s.year})</option>`).join('');
+        }
+    } catch (e) {
+        console.error('Failed to fetch semesters', e);
+    }
+}
+
+// Submit Leave Request
+async function submitLeaveRequest() {
+    const leave_type = document.getElementById('leave-type').value;
+    const start_date = document.getElementById('leave-start').value;
+    const end_date = document.getElementById('leave-end').value;
+    const semester_id = document.getElementById('leave-semester').value;
+    const reason = document.getElementById('leave-reason').value;
+
+    if (!start_date || !end_date) return alert('Please select a start and end date');
+
+    try {
+        await API.post('/faculty-leaves/', {
+            faculty_id: parseInt(currentUser.id),
+            timetable_id: null,
+            leave_type,
+            start_date,
+            end_date,
+            semester_id: semester_id ? parseInt(semester_id) : null,
+            reason
+        });
+
+        toggleModal('modal-leave', false);
+        alert('Leave request submitted successfully');
+    } catch (error) {
+        console.error('Error submitting leave request:', error);
+        alert(error.message || 'Error submitting leave request');
+    }
 }
