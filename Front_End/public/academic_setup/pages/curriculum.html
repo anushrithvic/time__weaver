@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curriculum Management - TimeWeaver</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">⏱</div>
+            <h1>TimeWeaver</h1>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="courses.html" class="menu-item">Courses</a></li>
+            <li><a href="departments.html" class="menu-item">Departments</a></li>
+            <li><a href="semesters.html" class="menu-item">Semesters</a></li>
+            <li><a href="sections.html" class="menu-item">Sections</a></li>
+            <li><a href="curriculum.html" class="menu-item active">Curriculum</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="../../admin/index.html" class="logout-btn">Admin Dashboard</a>
+            <a href="../../login.html" class="logout-btn">Logout</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1>Curriculum Management</h1>
+                <p class="page-subtitle">Map courses to department/year/semester combinations</p>
+            </div>
+            <button class="btn-primary" onclick="openAddModal()">+ Add Curriculum Mapping</button>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <h3>Filters</h3>
+            <div class="filters-grid">
+                <div class="form-group">
+                    <label for="filterDepartment">Department</label>
+                    <select id="filterDepartment" onchange="applyFilters()">
+                        <option value="">All Departments</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterYear">Year Level</label>
+                    <select id="filterYear" onchange="applyFilters()">
+                        <option value="">All Years</option>
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterSemester">Semester Type</label>
+                    <select id="filterSemester" onchange="applyFilters()">
+                        <option value="">All Semesters</option>
+                        <option value="ODD">ODD (1, 3, 5, 7)</option>
+                        <option value="EVEN">EVEN (2, 4, 6, 8)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button class="btn-secondary" onclick="clearFilters()">Clear Filters</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-cards">
+            <div class="stat-card">
+                <div class="stat-value" id="totalMappings">0</div>
+                <div class="stat-label">Total Mappings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="coreCourses">0</div>
+                <div class="stat-label">Core Courses</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="electiveCourses">0</div>
+                <div class="stat-label">Elective Courses</div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <div class="table-header">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search curriculum..." onkeyup="searchCurriculum()">
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Department</th>
+                        <th>Year Level</th>
+                        <th>Semester Type</th>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Type</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="curriculumTableBody">
+                    <tr>
+                        <td colspan="7" class="loading">Loading curriculum...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Add/Edit Curriculum Modal -->
+    <div id="curriculumModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Curriculum Mapping</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="curriculumForm" onsubmit="saveCurriculum(event)">
+                    <input type="hidden" id="curriculumId">
+
+                    <div class="form-group">
+                        <label for="curriculumDepartment">Department <span class="required">*</span></label>
+                        <select id="curriculumDepartment" required>
+                            <option value="">Select Department</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="curriculumYear">Year Level <span class="required">*</span></label>
+                        <select id="curriculumYear" required>
+                            <option value="">Select Year</option>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="curriculumSemester">Semester Type <span class="required">*</span></label>
+                        <select id="curriculumSemester" required>
+                            <option value="">Select Semester</option>
+                            <option value="ODD">ODD (1, 3, 5, 7)</option>
+                            <option value="EVEN">EVEN (2, 4, 6, 8)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="curriculumCourse">Course <span class="required">*</span></label>
+                        <select id="curriculumCourse" required>
+                            <option value="">Select Course</option>
+                        </select>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="isMandatory" checked>
+                        <label for="isMandatory">Mandatory (Core Course)</label>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Mapping</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/curriculum.js"></script>
+</body>
+</html>

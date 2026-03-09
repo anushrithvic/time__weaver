@@ -5,11 +5,33 @@
 
 // ---- ELECTIVE GROUPS ----
 let electiveGroupsData = [];
+let allDepartments = [];
+let allCourses = [];
 
 async function loadElectiveGroups() {
     try {
-        const response = await fetch(`${API_BASE}/elective-groups/`);
-        electiveGroupsData = await response.json();
+        const response = await authFetch(`${API_BASE}/elective-groups/`);
+        const json = await response.json();
+        electiveGroupsData = json.data || json;
+
+        // Also load departments for the modal
+        if (!allDepartments.length) {
+            try {
+                const deptResp = await authFetch(`${API_BASE}/departments/`);
+                const deptJson = await deptResp.json();
+                allDepartments = deptJson.data || deptJson || [];
+            } catch (e) { console.error('Error loading departments:', e); }
+        }
+
+        // Also load courses for the modal
+        if (!allCourses.length) {
+            try {
+                const courseResp = await authFetch(`${API_BASE}/courses/`);
+                const courseJson = await courseResp.json();
+                allCourses = courseJson.data || courseJson || [];
+            } catch (e) { console.error('Error loading courses:', e); }
+        }
+
         renderElectiveGroups();
     } catch (error) {
         console.error('Error loading elective groups:', error);
@@ -23,40 +45,177 @@ function renderElectiveGroups() {
         tbody.innerHTML = '<tr><td colspan="5" class="px-8 py-12 text-center text-text-muted italic">No elective groups found</td></tr>';
         return;
     }
-    tbody.innerHTML = electiveGroupsData.map(eg => `
+    tbody.innerHTML = electiveGroupsData.map(eg => {
+        // Map department IDs to names
+        const deptNames = (eg.participating_department_ids || [])
+            .map(deptId => allDepartments.find(d => d.id === deptId)?.name)
+            .filter(Boolean)
+            .join(', ') || '-';
+
+        return `
         <tr class="hover:bg-main transition-colors">
             <td class="px-8 py-4 text-text-muted text-sm">${eg.id}</td>
             <td class="px-8 py-4 text-text-main font-semibold">${eg.name || '-'}</td>
             <td class="px-8 py-4 text-text-muted text-sm">${eg.description || '-'}</td>
-            <td class="px-8 py-4 text-text-muted text-sm">${(eg.departments || []).map(d => d.name || d.code).join(', ') || '-'}</td>
-            <td class="px-8 py-4 text-center">
-                <button onclick="deleteElectiveGroup(${eg.id})" class="text-red-400 hover:text-red-300 transition-colors">
+            <td class="px-8 py-4 text-text-muted text-sm">${deptNames}</td>
+            <td class="px-8 py-4 text-center flex items-center justify-center gap-2">
+                <button onclick="editElectiveGroup(${eg.id})" class="text-blue-400 hover:text-blue-300 transition-colors" title="Edit">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+                <button onclick="deleteElectiveGroup(${eg.id})" class="text-red-400 hover:text-red-300 transition-colors" title="Delete">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </td>
         </tr>
+    `;
+    }).join('');
+}
+
+// Function to populate department checkboxes in modal
+function populateElectiveGroupDepartments() {
+    const container = document.getElementById('eg-depts-container');
+    if (!container) return;
+
+    if (!allDepartments.length) {
+        container.innerHTML = '<p class="text-xs text-text-muted">No departments available</p>';
+        return;
+    }
+
+    container.innerHTML = allDepartments.map(dept => `
+        <label class="flex items-center gap-2 py-2 px-3 hover:bg-hover">
+            <input type="checkbox" name="eg-depts" value="${dept.id}" class="w-4 h-4">
+            <span class="text-sm text-text-main">${dept.name}</span>
+        </label>
     `).join('');
 }
+
+// Function to populate course checkboxes in modal
+function populateElectiveGroupCourses() {
+    const container = document.getElementById('eg-courses-container');
+    if (!container) return;
+
+    if (!allCourses || !allCourses.length) {
+        container.innerHTML = '<p class="text-xs text-text-muted">No courses available</p>';
+        return;
+    }
+
+    container.innerHTML = allCourses.map(course => `
+        <label class="flex items-center gap-2 py-2 px-3 hover:bg-hover eg-course-item">
+            <input type="checkbox" name="eg-courses" value="${course.id}" class="w-4 h-4 text-red-600">
+            <span class="text-sm text-text-main course-text">${course.code} - ${course.name}</span>
+        </label>
+    `).join('');
+}
+
+// Function to filter courses in modal
+function filterEGCourses() {
+    const searchTerm = document.getElementById('eg-course-search')?.value.toLowerCase();
+    const items = document.querySelectorAll('.eg-course-item');
+    items.forEach(item => {
+        const text = item.querySelector('.course-text').textContent.toLowerCase();
+        item.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+    });
+}
+
+function clearEGCourses() {
+    const courseCheckboxes = document.querySelectorAll('input[name="eg-courses"]');
+    courseCheckboxes.forEach(cb => cb.checked = false);
+    const searchInput = document.getElementById('eg-course-search');
+    if (searchInput) {
+        searchInput.value = '';
+        filterEGCourses();
+    }
+}
+
+let editingElectiveGroupId = null;
 
 async function saveElectiveGroup() {
     const name = document.getElementById('eg-name').value;
     const description = document.getElementById('eg-desc').value;
+    const deptCheckboxes = document.querySelectorAll('input[name="eg-depts"]:checked');
+    const participating_department_ids = Array.from(deptCheckboxes).map(cb => parseInt(cb.value));
+
+    const courseCheckboxes = document.querySelectorAll('input[name="eg-courses"]:checked');
+    const selected_course_ids = Array.from(courseCheckboxes).map(cb => parseInt(cb.value));
+
     if (!name) return alert('Please enter a group name');
 
     try {
-        const response = await fetch(`${API_BASE}/elective-groups/`, {
-            method: 'POST',
+        const method = editingElectiveGroupId ? 'PUT' : 'POST';
+        const url = editingElectiveGroupId
+            ? `${API_BASE}/elective-groups/${editingElectiveGroupId}`
+            : `${API_BASE}/elective-groups/`;
+
+        const response = await authFetch(url, {
+            method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description })
+            body: JSON.stringify({ name, description, participating_department_ids })
         });
+
         if (response.ok) {
+            const resultData = await response.json();
+            const groupId = editingElectiveGroupId || resultData.id;
+
+            // Handle Course Assignments
+            if (groupId) {
+                // First, if editing, we might want to clear existing assignments or simply merge. 
+                // For simplicity, let's just make sure we add logic here to assign them.
+                // Ideally, there should be a batch sync endpoint, or we make concurrent posts.
+
+                // Fetch existing assignments for this group
+                let existingAssignments = [];
+                try {
+                    const assignResp = await authFetch(`${API_BASE}/course-elective-assignments/?elective_group_id=${groupId}`);
+                    if (assignResp.ok) {
+                        const assignJson = await assignResp.json();
+                        existingAssignments = assignJson.data || assignJson || [];
+                    }
+                } catch (e) {
+                    console.error('Error fetching existing assignments:', e);
+                }
+
+                const existingCourseIds = existingAssignments.map(a => a.course_id);
+
+                // Determine which to add and which to remove
+                const coursesToAdd = selected_course_ids.filter(id => !existingCourseIds.includes(id));
+                const coursesToRemove = existingAssignments.filter(a => !selected_course_ids.includes(a.course_id));
+
+                const operations = [];
+
+                // Add new course assignments
+                coursesToAdd.forEach(courseId => {
+                    operations.push(authFetch(`${API_BASE}/course-elective-assignments/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            elective_group_id: groupId,
+                            course_id: courseId
+                            // semester_id is optional now
+                        })
+                    }));
+                });
+
+                // Remove unselected course assignments
+                coursesToRemove.forEach(assignment => {
+                    operations.push(authFetch(`${API_BASE}/course-elective-assignments/${assignment.id}`, {
+                        method: 'DELETE'
+                    }));
+                });
+
+                // Wait for all assignment operations to complete
+                await Promise.all(operations).catch(e => console.error("Error updating course assignments", e));
+            }
+
             toggleModal('modal-elective-group', false);
             document.getElementById('eg-name').value = '';
             document.getElementById('eg-desc').value = '';
+            document.querySelectorAll('input[name="eg-depts"]').forEach(cb => cb.checked = false);
+            clearEGCourses();
+            editingElectiveGroupId = null;
             loadElectiveGroups();
         } else {
             const data = await response.json();
-            alert(data.detail || 'Failed to create elective group');
+            alert(data.detail || 'Failed to save elective group');
         }
     } catch (error) {
         console.error('Error saving elective group:', error);
@@ -64,10 +223,48 @@ async function saveElectiveGroup() {
     }
 }
 
+async function editElectiveGroup(id) {
+    const group = electiveGroupsData.find(g => g.id === id);
+    if (!group) return;
+
+    editingElectiveGroupId = id;
+    document.getElementById('eg-name').value = group.name || '';
+    document.getElementById('eg-desc').value = group.description || '';
+
+    // Populate and pre-check departments
+    populateElectiveGroupDepartments();
+    const deptCheckboxes = document.querySelectorAll('input[name="eg-depts"]');
+    deptCheckboxes.forEach(cb => {
+        cb.checked = (group.participating_department_ids || []).includes(parseInt(cb.value));
+    });
+
+    // Populate and pre-check courses
+    populateElectiveGroupCourses();
+    clearEGCourses(); // Resets search and checks
+
+    try {
+        const assignResp = await authFetch(`${API_BASE}/course-elective-assignments/?elective_group_id=${id}`);
+        if (assignResp.ok) {
+            const assignJson = await assignResp.json();
+            const existingAssignments = assignJson.data || assignJson || [];
+            const existingCourseIds = existingAssignments.map(a => a.course_id);
+
+            const courseCheckboxes = document.querySelectorAll('input[name="eg-courses"]');
+            courseCheckboxes.forEach(cb => {
+                cb.checked = existingCourseIds.includes(parseInt(cb.value));
+            });
+        }
+    } catch (e) {
+        console.error('Error fetching existing assignments for edit:', e);
+    }
+
+    toggleModal('modal-elective-group', true);
+}
+
 async function deleteElectiveGroup(id) {
     if (!confirm('Delete this elective group?')) return;
     try {
-        const response = await fetch(`${API_BASE}/elective-groups/${id}`, { method: 'DELETE' });
+        const response = await authFetch(`${API_BASE}/elective-groups/${id}`, { method: 'DELETE' });
         if (response.ok) loadElectiveGroups();
     } catch (error) {
         console.error('Error deleting elective group:', error);
@@ -82,8 +279,9 @@ async function loadTimeSlots() {
         const filterDay = document.getElementById('ts-filter-day')?.value;
         let url = `${API_BASE}/time-slots/`;
         if (filterDay) url += `?day_of_week=${filterDay}`;
-        const response = await fetch(url);
-        timeSlotsData = await response.json();
+        const response = await authFetch(url);
+        const json = await response.json();
+        timeSlotsData = json.data || json;
         renderTimeSlots();
     } catch (error) {
         console.error('Error loading time slots:', error);
@@ -128,7 +326,7 @@ async function saveTimeSlot() {
     if (!start_time || !end_time) return alert('Please fill start and end time');
 
     try {
-        const response = await fetch(`${API_BASE}/time-slots/`, {
+        const response = await authFetch(`${API_BASE}/time-slots/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ day_of_week, start_time, end_time, duration_minutes, slot_type, is_break })
@@ -151,7 +349,7 @@ async function saveTimeSlot() {
 async function deleteTimeSlot(id) {
     if (!confirm('Delete this time slot?')) return;
     try {
-        const response = await fetch(`${API_BASE}/time-slots/${id}`, { method: 'DELETE' });
+        const response = await authFetch(`${API_BASE}/time-slots/${id}`, { method: 'DELETE' });
         if (response.ok) loadTimeSlots();
     } catch (error) {
         console.error('Error deleting time slot:', error);
@@ -163,8 +361,9 @@ let constraintsData = [];
 
 async function loadConstraints() {
     try {
-        const response = await fetch(`${API_BASE}/constraints/`);
-        constraintsData = await response.json();
+        const response = await authFetch(`${API_BASE}/constraints/`);
+        const json = await response.json();
+        constraintsData = json.data || json;
         renderConstraints();
     } catch (error) {
         console.error('Error loading constraints:', error);
@@ -213,7 +412,7 @@ async function saveConstraint() {
     if (!name) return alert('Please enter a constraint name');
 
     try {
-        const response = await fetch(`${API_BASE}/constraints/`, {
+        const response = await authFetch(`${API_BASE}/constraints/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, constraint_type, category, rule_definition, priority, weight, is_hard })
@@ -235,7 +434,7 @@ async function saveConstraint() {
 
 async function explainConstraint(id) {
     try {
-        const response = await fetch(`${API_BASE}/constraints/${id}/explain`);
+        const response = await authFetch(`${API_BASE}/constraints/${id}/explain`);
         if (response.ok) {
             const explanation = await response.json();
             alert(`Constraint Explanation:\n\n${explanation.explanation || JSON.stringify(explanation, null, 2)}`);
@@ -250,7 +449,7 @@ async function explainConstraint(id) {
 async function deleteConstraint(id) {
     if (!confirm('Delete this constraint?')) return;
     try {
-        const response = await fetch(`${API_BASE}/constraints/${id}`, { method: 'DELETE' });
+        const response = await authFetch(`${API_BASE}/constraints/${id}`, { method: 'DELETE' });
         if (response.ok) loadConstraints();
     } catch (error) {
         console.error('Error deleting constraint:', error);
@@ -262,8 +461,9 @@ let leavesData = [];
 
 async function loadLeaves() {
     try {
-        const response = await fetch(`${API_BASE}/faculty-leaves/`);
-        leavesData = await response.json();
+        const response = await authFetch(`${API_BASE}/faculty-leaves/`);
+        const json = await response.json();
+        leavesData = json.data || json;
         renderLeaves();
         updateLeaveStats();
         populateLeaveDropdowns();
@@ -287,7 +487,7 @@ function updateLeaveStats() {
 async function populateLeaveDropdowns() {
     // Populate faculty dropdown
     try {
-        const facultyResp = await fetch(`${API_BASE}/users/?role=faculty`);
+        const facultyResp = await authFetch(`${API_BASE}/users/?role=faculty`);
         const facultyList = await facultyResp.json();
         const sel = document.getElementById('leave-faculty');
         if (sel) {
@@ -298,7 +498,7 @@ async function populateLeaveDropdowns() {
 
     // Populate timetable dropdown
     try {
-        const ttResp = await fetch(`${API_BASE}/timetables/`);
+        const ttResp = await authFetch(`${API_BASE}/timetables/`);
         const ttList = await ttResp.json();
         const sel = document.getElementById('leave-timetable');
         if (sel) {
@@ -315,7 +515,7 @@ async function populateLeaveDropdowns() {
 
     // Populate semester dropdown
     try {
-        const semResp = await fetch(`${API_BASE}/semesters`);
+        const semResp = await authFetch(`${API_BASE}/semesters`);
         const semList = await semResp.json();
         const sel = document.getElementById('leave-semester');
         if (sel) {
@@ -383,7 +583,7 @@ async function saveLeave() {
     if (!faculty_id || !start_date || !end_date) return alert('Please fill in required fields');
 
     try {
-        const response = await fetch(`${API_BASE}/faculty-leaves/`, {
+        const response = await authFetch(`${API_BASE}/faculty-leaves/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -412,7 +612,7 @@ async function saveLeave() {
 async function approveLeave(id) {
     if (!confirm('Approve this leave request?')) return;
     try {
-        const response = await fetch(`${API_BASE}/faculty-leaves/${id}/approve`, { method: 'PATCH' });
+        const response = await authFetch(`${API_BASE}/faculty-leaves/${id}/approve`, { method: 'PATCH' });
         if (response.ok) loadLeaves();
         else alert('Failed to approve leave');
     } catch (error) { console.error(error); }
@@ -421,7 +621,7 @@ async function approveLeave(id) {
 async function rejectLeave(id) {
     if (!confirm('Reject this leave request?')) return;
     try {
-        const response = await fetch(`${API_BASE}/faculty-leaves/${id}`, {
+        const response = await authFetch(`${API_BASE}/faculty-leaves/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'REJECTED' })
@@ -434,7 +634,7 @@ async function rejectLeave(id) {
 async function applyLeave(id) {
     if (!confirm('Apply this leave to the timetable schedule?')) return;
     try {
-        const response = await fetch(`${API_BASE}/faculty-leaves/${id}/apply`, { method: 'PATCH' });
+        const response = await authFetch(`${API_BASE}/faculty-leaves/${id}/apply`, { method: 'PATCH' });
         if (response.ok) {
             alert('Leave applied to schedule successfully');
             loadLeaves();
@@ -444,7 +644,7 @@ async function applyLeave(id) {
 
 async function analyzeLeave(id) {
     try {
-        const response = await fetch(`${API_BASE}/faculty-leaves/analyze`, {
+        const response = await authFetch(`${API_BASE}/faculty-leaves/analyze`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ leave_id: id })
@@ -461,7 +661,7 @@ async function loadLockedSlots() {
     const timetableId = document.getElementById('lock-timetable-id')?.value;
     if (!timetableId) return;
     try {
-        const response = await fetch(`${API_BASE}/slot-locks/locked?timetable_id=${timetableId}`);
+        const response = await authFetch(`${API_BASE}/slot-locks/locked?timetable_id=${timetableId}`);
         const data = await response.json();
         renderLockedSlots(data);
     } catch (error) {
@@ -501,7 +701,7 @@ async function lockSlots() {
     if (!slot_ids.length) return alert('Invalid slot IDs');
 
     try {
-        const response = await fetch(`${API_BASE}/slot-locks/lock`, {
+        const response = await authFetch(`${API_BASE}/slot-locks/lock`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ timetable_id: parseInt(timetable_id), slot_ids })
@@ -528,7 +728,7 @@ async function unlockSlots() {
     if (!slot_ids.length) return alert('Invalid slot IDs');
 
     try {
-        const response = await fetch(`${API_BASE}/slot-locks/unlock`, {
+        const response = await authFetch(`${API_BASE}/slot-locks/unlock`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ timetable_id: parseInt(timetable_id), slot_ids })
@@ -554,8 +754,9 @@ async function loadUsers() {
         const roleFilter = document.getElementById('user-filter-role')?.value;
         let url = `${API_BASE}/users/`;
         if (roleFilter) url += `?role=${roleFilter}`;
-        const response = await fetch(url);
-        usersData = await response.json();
+        const response = await authFetch(url);
+        const json = await response.json();
+        usersData = json.data || json;
         renderUsers();
     } catch (error) {
         console.error('Error loading users:', error);
@@ -608,7 +809,7 @@ async function saveUser() {
     if (!username || !password) return alert('Username and password are required');
 
     try {
-        const response = await fetch(`${API_BASE}/users/`, {
+        const response = await authFetch(`${API_BASE}/users/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, full_name, email, password, role })
@@ -633,7 +834,7 @@ async function saveUser() {
 async function deleteUser(id) {
     if (!confirm('Delete this user? This cannot be undone.')) return;
     try {
-        const response = await fetch(`${API_BASE}/users/${id}`, { method: 'DELETE' });
+        const response = await authFetch(`${API_BASE}/users/${id}`, { method: 'DELETE' });
         if (response.ok) loadUsers();
         else alert('Failed to delete user');
     } catch (error) {
@@ -660,8 +861,9 @@ async function loadAuditLogs() {
         let url = `${API_BASE}/audit-logs/`;
         if (params.length) url += '?' + params.join('&');
 
-        const response = await fetch(url);
-        auditLogsData = await response.json();
+        const response = await authFetch(url);
+        const json = await response.json();
+        auditLogsData = json.data || json;
         renderAuditLogs();
     } catch (error) {
         console.error('Error loading audit logs:', error);
@@ -701,8 +903,9 @@ let facultyPreferencesData = [];
 
 async function loadFacultyPreferences() {
     try {
-        const response = await fetch(`${API_BASE}/faculty-preferences/`);
-        facultyPreferencesData = await response.json();
+        const response = await authFetch(`${API_BASE}/faculty-preferences/`);
+        const json = await response.json();
+        facultyPreferencesData = json.data || json;
         renderFacultyPreferences();
         populatePreferenceDropdowns();
     } catch (error) {
@@ -712,14 +915,15 @@ async function loadFacultyPreferences() {
 
 async function populatePreferenceDropdowns() {
     try {
-        const facultyResp = await fetch(`${API_BASE}/users/?role=faculty`);
-        const facultyList = await facultyResp.json();
+        const facultyResp = await authFetch(`${API_BASE}/users/?role=faculty`);
+        const facultyJson = await facultyResp.json();
+        const facultyList = facultyJson.data || facultyJson;
         const selFac = document.getElementById('fp-faculty');
         if (selFac) {
             selFac.innerHTML = '<option value="">Select Faculty</option>' +
                 facultyList.map(f => `<option value="${f.id}">${f.full_name || f.username}</option>`).join('');
         }
-        const tsResp = await fetch(`${API_BASE}/time-slots/`);
+        const tsResp = await authFetch(`${API_BASE}/time-slots/`);
         const tsList = await tsResp.json();
         const selTs = document.getElementById('fp-timeslot');
         if (selTs) {
@@ -772,7 +976,7 @@ async function saveFacultyPreference() {
     if (!faculty_id || !time_slot_id) return alert('Please select a faculty member and time slot');
 
     try {
-        const response = await fetch(`${API_BASE}/faculty-preferences/?faculty_id=${faculty_id}`, {
+        const response = await authFetch(`${API_BASE}/faculty-preferences/?faculty_id=${faculty_id}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -797,7 +1001,7 @@ async function saveFacultyPreference() {
 async function deleteFacultyPreference(id) {
     if (!confirm('Delete this preference?')) return;
     try {
-        const response = await fetch(`${API_BASE}/faculty-preferences/${id}`, { method: 'DELETE' });
+        const response = await authFetch(`${API_BASE}/faculty-preferences/${id}`, { method: 'DELETE' });
         if (response.ok) loadFacultyPreferences();
     } catch (error) {
         console.error('Error deleting preference:', error);
@@ -809,8 +1013,9 @@ let facultyCoursesData = [];
 
 async function loadFacultyCourses() {
     try {
-        const response = await fetch(`${API_BASE}/faculty-courses/`);
-        facultyCoursesData = await response.json();
+        const response = await authFetch(`${API_BASE}/faculty-courses/`);
+        const json = await response.json();
+        facultyCoursesData = json.data || json;
         renderFacultyCourses();
         populateFacultyCourseDropdowns();
     } catch (error) {
@@ -821,32 +1026,36 @@ async function loadFacultyCourses() {
 async function populateFacultyCourseDropdowns() {
     try {
         // Faculty
-        const facultyResp = await fetch(`${API_BASE}/users/?role=faculty`);
-        const facultyList = await facultyResp.json();
+        const facultyResp = await authFetch(`${API_BASE}/users/?role=faculty`);
+        const facultyJson = await facultyResp.json();
+        const facultyList = facultyJson.data || facultyJson;
         const selFac = document.getElementById('fc-faculty');
         if (selFac) {
             selFac.innerHTML = '<option value="">Select Faculty</option>' +
                 facultyList.map(f => `<option value="${f.id}">${f.full_name || f.username}</option>`).join('');
         }
         // Courses
-        const courseResp = await fetch(`${API_BASE}/courses/`);
-        const courseList = await courseResp.json();
+        const courseResp = await authFetch(`${API_BASE}/courses/`);
+        const courseJson = await courseResp.json();
+        const courseList = courseJson.data || courseJson;
         const selCourse = document.getElementById('fc-course');
         if (selCourse) {
             selCourse.innerHTML = '<option value="">Select Course</option>' +
                 courseList.map(c => `<option value="${c.id}">${c.name} (${c.code})</option>`).join('');
         }
         // Sections
-        const secResp = await fetch(`${API_BASE}/sections/`);
-        const secList = await secResp.json();
+        const secResp = await authFetch(`${API_BASE}/sections/`);
+        const secJson = await secResp.json();
+        const secList = secJson.data || secJson;
         const selSec = document.getElementById('fc-section');
         if (selSec) {
             selSec.innerHTML = '<option value="">Select Section (General assignment if none)</option>' +
                 secList.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
         }
         // Semesters
-        const semResp = await fetch(`${API_BASE}/semesters/`);
-        const semList = await semResp.json();
+        const semResp = await authFetch(`${API_BASE}/semesters/`);
+        const semJson = await semResp.json();
+        const semList = semJson.data || semJson;
         const selSem = document.getElementById('fc-semester');
         if (selSem) {
             selSem.innerHTML = '<option value="">Select Semester</option>' +
@@ -893,7 +1102,7 @@ async function saveFacultyCourse() {
     if (!faculty_id || !course_id || !semester_id) return alert('Faculty, Course, and Semester are required');
 
     try {
-        const response = await fetch(`${API_BASE}/faculty-courses/`, {
+        const response = await authFetch(`${API_BASE}/faculty-courses/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -920,11 +1129,347 @@ async function saveFacultyCourse() {
 async function deleteFacultyCourse(id) {
     if (!confirm('Delete this course assignment?')) return;
     try {
-        const response = await fetch(`${API_BASE}/faculty-courses/${id}`, { method: 'DELETE' });
+        const response = await authFetch(`${API_BASE}/faculty-courses/${id}`, { method: 'DELETE' });
         if (response.ok) loadFacultyCourses();
     } catch (error) {
         console.error('Error deleting course assignment:', error);
     }
+}
+
+// ---- COURSE ELECTIVE ASSIGNMENTS ----
+let courseElectiveAssignmentsData = [];
+let electiveGroupsForAssignments = [];
+let semestersForAssignments = [];
+let coursesForAssignments = [];
+let roomsForAssignments = [];
+
+async function loadCourseElectiveAssignments() {
+    try {
+        const response = await authFetch(`${API_BASE}/course-elective-assignments/`);
+        const json = await response.json();
+        courseElectiveAssignmentsData = json.data || json;
+        renderCourseElectiveAssignments();
+        await loadAssignmentDropdownData();
+    } catch (error) {
+        console.error('Error loading course elective assignments:', error);
+    }
+}
+
+async function loadAssignmentDropdownData() {
+    try {
+        const [groupsResp, semestersResp, coursesResp, roomsResp] = await Promise.all([
+            authFetch(`${API_BASE}/elective-groups/`),
+            authFetch(`${API_BASE}/semesters/`),
+            authFetch(`${API_BASE}/courses/`),
+            authFetch(`${API_BASE}/rooms/`)
+        ]);
+
+        electiveGroupsForAssignments = (await groupsResp.json()).data || [];
+        semestersForAssignments = (await semestersResp.json()).data || [];
+        coursesForAssignments = (await coursesResp.json()).data || [];
+        roomsForAssignments = (await roomsResp.json()).data || [];
+
+        // Populate dropdowns
+        populateAssignmentDropdowns();
+    } catch (error) {
+        console.error('Error loading dropdown data:', error);
+    }
+}
+
+function populateAssignmentDropdowns() {
+    const groupSel = document.getElementById('cea-group');
+    const semesterSel = document.getElementById('cea-semester');
+    const courseSel = document.getElementById('cea-course');
+    const roomSel = document.getElementById('cea-room');
+
+    if (groupSel) {
+        groupSel.innerHTML = '<option value="">Select Elective Group</option>' +
+            electiveGroupsForAssignments.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+    }
+    if (semesterSel) {
+        semesterSel.innerHTML = '<option value="">Select Semester</option>' +
+            semestersForAssignments.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    }
+    if (courseSel) {
+        courseSel.innerHTML = '<option value="">Select Course</option>' +
+            coursesForAssignments.map(c => `<option value="${c.id}">${c.code} - ${c.name}</option>`).join('');
+    }
+    if (roomSel) {
+        roomSel.innerHTML = '<option value="">None (Optional)</option>' +
+            roomsForAssignments.map(r => `<option value="${r.id}">${r.name || r.code}</option>`).join('');
+    }
+}
+
+function renderCourseElectiveAssignments() {
+    const tbody = document.getElementById('cea-list');
+    if (!tbody) return;
+    if (!courseElectiveAssignmentsData.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-8 py-12 text-center text-text-muted italic">No assignments found</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = courseElectiveAssignmentsData.map(cea => {
+        const group = electiveGroupsForAssignments.find(g => g.id === cea.elective_group_id);
+        const semester = semestersForAssignments.find(s => s.id === cea.semester_id);
+        const course = coursesForAssignments.find(c => c.id === cea.course_id);
+        const room = roomsForAssignments.find(r => r.id === cea.assigned_room_id);
+
+        return `
+        <tr class="hover:bg-main transition-colors">
+            <td class="px-8 py-4 text-text-main font-semibold">${group?.name || '-'}</td>
+            <td class="px-8 py-4 text-text-muted text-sm">${semester?.name || '-'}</td>
+            <td class="px-8 py-4 text-text-muted text-sm">${course?.code || '-'}</td>
+            <td class="px-8 py-4 text-text-muted text-sm">${course?.name || '-'}</td>
+            <td class="px-8 py-4 text-text-muted text-sm">${room?.name || room?.code || 'Not assigned'}</td>
+            <td class="px-8 py-4 text-center">
+                <button onclick="deleteCourseElectiveAssignment(${cea.id})" class="text-red-400 hover:text-red-300 transition-colors">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+        `;
+    }).join('');
+}
+
+async function saveCourseElectiveAssignment() {
+    const group_id = document.getElementById('cea-group').value;
+    const semester_id = document.getElementById('cea-semester').value;
+    const course_id = document.getElementById('cea-course').value;
+    const room_id = document.getElementById('cea-room').value;
+
+    if (!group_id || !semester_id || !course_id) {
+        return alert('Elective Group, Semester, and Course are required');
+    }
+
+    try {
+        const response = await authFetch(`${API_BASE}/course-elective-assignments/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                elective_group_id: parseInt(group_id),
+                semester_id: parseInt(semester_id),
+                course_id: parseInt(course_id),
+                assigned_room_id: room_id ? parseInt(room_id) : null
+            })
+        });
+        if (response.ok) {
+            toggleModal('modal-cea', false);
+            loadCourseElectiveAssignments();
+        } else {
+            const data = await response.json();
+            alert(data.detail || 'Failed to create assignment');
+        }
+    } catch (error) {
+        console.error('Error saving assignment:', error);
+        alert('Error saving assignment');
+    }
+}
+
+async function deleteCourseElectiveAssignment(id) {
+    if (!confirm('Delete this course assignment?')) return;
+    try {
+        const response = await authFetch(`${API_BASE}/course-elective-assignments/${id}`, { method: 'DELETE' });
+        if (response.ok) loadCourseElectiveAssignments();
+    } catch (error) {
+        console.error('Error deleting assignment:', error);
+    }
+}
+
+// Enhanced saveElectiveGroup to support departments
+async function saveElectiveGroupEnhanced() {
+    const name = document.getElementById('eg-name').value;
+    const description = document.getElementById('eg-desc').value;
+    const deptCheckboxes = document.querySelectorAll('input[name="eg-depts"]:checked');
+    const participating_department_ids = Array.from(deptCheckboxes).map(cb => parseInt(cb.value));
+
+    if (!name) return alert('Please enter a group name');
+
+    try {
+        const response = await authFetch(`${API_BASE}/elective-groups/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name,
+                description,
+                participating_department_ids
+            })
+        });
+        if (response.ok) {
+            toggleModal('modal-elective-group', false);
+            document.getElementById('eg-name').value = '';
+            document.getElementById('eg-desc').value = '';
+            document.querySelectorAll('input[name="eg-depts"]').forEach(cb => cb.checked = false);
+            loadElectiveGroups();
+        } else {
+            const data = await response.json();
+            alert(data.detail || 'Failed to create elective group');
+        }
+    } catch (error) {
+        console.error('Error saving elective group:', error);
+        alert('Error saving elective group');
+    }
+}
+
+// ---- CURRICULUM ----
+let curriculumData = [];
+let curriculumDepts = [];
+let curriculumCourses = [];
+
+let curriculumElectiveGroups = [];
+
+async function loadCurriculum() {
+    try {
+        const deptFilter = document.getElementById('curr-filter-dept')?.value || '';
+        const yearFilter = document.getElementById('curr-filter-year')?.value || '';
+        const semFilter = document.getElementById('curr-filter-sem')?.value || '';
+
+        let url = `${API_BASE}/curriculum/?`;
+        if (deptFilter) url += `department_id=${deptFilter}&`;
+        if (yearFilter) url += `year_level=${yearFilter}&`;
+        if (semFilter) url += `semester_type=${semFilter}&`;
+
+        const response = await authFetch(url);
+        const json = await response.json();
+        curriculumData = json.data || json;
+
+        if (!curriculumDepts.length || !curriculumElectiveGroups.length) {
+            const [deptResp, courseResp, groupResp] = await Promise.all([
+                authFetch(`${API_BASE}/departments/`),
+                authFetch(`${API_BASE}/courses/`),
+                authFetch(`${API_BASE}/elective-groups/`)
+            ]);
+            const deptJson = await deptResp.json();
+            const courseJson = await courseResp.json();
+            const groupJson = await groupResp.json();
+            curriculumDepts = deptJson.data || deptJson || [];
+            curriculumCourses = courseJson.data || courseJson || [];
+            curriculumElectiveGroups = groupJson.data || groupJson || [];
+        }
+
+        populateCurriculumDropdowns();
+        renderCurriculum();
+    } catch (error) {
+        console.error('Error loading curriculum:', error);
+    }
+}
+
+function populateCurriculumDropdowns() {
+    const deptSel = document.getElementById('curr-dept');
+    const filterSel = document.getElementById('curr-filter-dept');
+    const courseSel = document.getElementById('curr-course');
+    const egSel = document.getElementById('curr-elective-group');
+
+    const dtVal = deptSel?.value;
+    const fsVal = filterSel?.value;
+    const csVal = courseSel?.value;
+    const egVal = egSel?.value;
+
+    if (deptSel) {
+        deptSel.innerHTML = '<option value="">Select Department</option>' +
+            curriculumDepts.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+        if (dtVal) deptSel.value = dtVal;
+    }
+    if (filterSel) {
+        filterSel.innerHTML = '<option value="">All Departments</option>' +
+            curriculumDepts.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+        if (fsVal) filterSel.value = fsVal;
+    }
+    if (courseSel) {
+        courseSel.innerHTML = '<option value="">Select Course</option>' +
+            curriculumCourses.map(c => `<option value="${c.id}">${c.code} - ${c.name}</option>`).join('');
+        if (csVal) courseSel.value = csVal;
+    }
+    if (egSel) {
+        egSel.innerHTML = '<option value="">Select Elective Group</option>' +
+            curriculumElectiveGroups.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+        if (egVal) egSel.value = egVal;
+    }
+}
+
+function filterCurriculum() {
+    const term = document.getElementById('curr-search')?.value.toLowerCase();
+    const rows = document.querySelectorAll('#curriculum-list tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(term) ? '' : 'none';
+    });
+}
+
+function toggleCurriculumMappingType() {
+    const isCourse = document.querySelector('input[name="curr-mapping-type"]:checked').value === 'course';
+    if (isCourse) {
+        document.getElementById('curr-course-container').classList.remove('hidden');
+        document.getElementById('curr-elective-group-container').classList.add('hidden');
+    } else {
+        document.getElementById('curr-course-container').classList.add('hidden');
+        document.getElementById('curr-elective-group-container').classList.remove('hidden');
+    }
+}
+
+function renderCurriculum() {
+    const tbody = document.getElementById('curriculum-list');
+    if (!tbody || !curriculumData.length) return;
+
+    tbody.innerHTML = curriculumData.map(curr => {
+        const dept = curriculumDepts.find(d => d.id === curr.department_id);
+        const course = curriculumCourses.find(c => c.id === curr.course_id);
+        const eg = curriculumElectiveGroups.find(e => e.id === curr.elective_group_id);
+        const yearLabels = { 1: '1st', 2: '2nd', 3: '3rd', 4: '4th' };
+
+        const rowCode = course ? course.code : (eg ? eg.name : '-');
+        const rowName = course ? course.name : (eg ? 'Elective Group' : '-');
+
+        return `<tr class="hover:bg-main transition-colors">
+            <td class="px-8 py-4 text-text-muted text-sm">${dept?.name || '-'}</td>
+            <td class="px-8 py-4 text-text-muted text-sm">${yearLabels[curr.year_level] || '-'} Year</td>
+            <td class="px-8 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${curr.semester_type === 'ODD' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'}">${curr.semester_type}</span></td>
+            <td class="px-8 py-4 text-text-main font-semibold">${rowCode}</td>
+            <td class="px-8 py-4 text-text-muted text-sm">${rowName}</td>
+            <td class="px-8 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${curr.is_mandatory ? 'bg-purple-500/10 text-purple-400' : 'bg-amber-500/10 text-amber-400'}">${curr.is_mandatory ? 'Core' : 'Elective'}</span></td>
+            <td class="px-8 py-4 text-center"><button onclick="deleteCurriculum(${curr.id})" class="text-red-400 hover:text-red-300 transition-colors"><i class="fa-solid fa-trash"></i></button></td>
+        </tr>`;
+    }).join('');
+}
+
+async function saveCurriculum() {
+    const dept_id = document.getElementById('curr-dept').value;
+    const year = document.getElementById('curr-year').value;
+    const semester = document.getElementById('curr-semester').value;
+    const is_mandatory = document.getElementById('curr-mandatory').checked;
+
+    const mappingType = document.querySelector('input[name="curr-mapping-type"]:checked')?.value || 'course';
+    const course_id = mappingType === 'course' ? document.getElementById('curr-course').value : null;
+    const eg_id = mappingType === 'elective_group' ? document.getElementById('curr-elective-group').value : null;
+
+    if (!dept_id || !year || !semester || (!course_id && !eg_id)) return alert('Please fill all required fields');
+
+    const payload = {
+        department_id: parseInt(dept_id),
+        year_level: parseInt(year),
+        semester_type: semester,
+        is_mandatory
+    };
+
+    if (course_id) payload.course_id = parseInt(course_id);
+    if (eg_id) payload.elective_group_id = parseInt(eg_id);
+
+    try {
+        const response = await authFetch(`${API_BASE}/curriculum/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (response.ok) { toggleModal('modal-curriculum', false); loadCurriculum(); }
+        else alert((await response.json()).detail || 'Failed to save');
+    } catch (error) { console.error('Error:', error); alert('Error saving mapping'); }
+}
+
+async function deleteCurriculum(id) {
+    if (!confirm('Delete this mapping?')) return;
+    try {
+        const response = await authFetch(`${API_BASE}/curriculum/${id}`, { method: 'DELETE' });
+        if (response.ok) loadCurriculum();
+    } catch (error) { console.error('Error:', error); }
 }
 
 // ---- HOOK INTO showPage from app.js ----
@@ -952,6 +1497,7 @@ function showPage(pageId) {
         case 'faculty-leaves': loadLeaves(); break;
         case 'faculty-preferences': loadFacultyPreferences(); break;
         case 'faculty-courses': loadFacultyCourses(); break;
+        case 'curriculum': loadCurriculum(); break;
         case 'slot-locks': populateLeaveDropdowns(); loadLockedSlots(); break;
         case 'users': loadUsers(); break;
         case 'audit-logs': loadAuditLogs(); break;

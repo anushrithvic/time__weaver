@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="assets/js/theme-config.js"></script>
-    <script src="api-client.js"></script>
+    <script src="api-client.js?v=3"></script>
 </head>
 
 <body
@@ -248,23 +248,19 @@
             const password = document.getElementById('reg-password').value;
 
             try {
-                const response = await API.post('/auth/register', {
+                const data = await API.post('/auth/register', {
                     full_name: fullName,
                     username: username,
                     password: password,
-                    role: 'admin'
+                    role: 'admin',
+                    email: username + '@system.local' // Dummy email for initialization
                 });
 
-                if (response.ok) {
-                    alert('Admin Registered! Please login.');
-                    location.reload();
-                } else {
-                    const data = await response.json();
-                    alert(data.error || 'Registration failed');
-                }
+                alert('Admin Registered! Please login.');
+                location.reload();
             } catch (err) {
                 console.error(err);
-                alert('Connection error');
+                alert('Registration failed: ' + err.message);
             }
         });
     </script>

@@ -97,6 +97,11 @@
                     <i class="fa-solid fa-users w-5"></i>
                     <span class="font-medium text-sm">Sections</span>
                 </button>
+                <button onclick="showPage('curriculum')" id="btn-curriculum"
+                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
+                    <i class="fa-solid fa-book-open w-5"></i>
+                    <span class="font-medium text-sm">Curriculum</span>
+                </button>
                 <button onclick="showPage('elective-groups')" id="btn-elective-groups"
                     class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-main hover:text-primary transition-all">
                     <i class="fa-solid fa-layer-group w-5"></i>
@@ -641,6 +646,61 @@
                             </tr>
                         </thead>
                         <tbody id="sections-list" class="divide-y divide-border-color"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CURRICULUM PAGE -->
+            <div id="page-curriculum" class="page-content p-8 hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-text-main">Curriculum Management</h2>
+                        <p class="text-text-muted">Map courses to department/year/semester combinations</p>
+                    </div>
+                    <button onclick="toggleModal('modal-curriculum', true)"
+                        class="bg-red-700 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-all shadow-lg shadow-red-900/20 font-semibold flex items-center gap-2 neon-border">
+                        <i class="fa-solid fa-plus"></i> Add Mapping
+                    </button>
+                </div>
+
+                <div class="mb-4 flex gap-3 flex-wrap">
+                    <select id="curr-filter-dept" onchange="loadCurriculum()"
+                        class="bg-main border border-border-color rounded-lg px-3 py-2 text-sm font-bold text-text-main outline-none focus:ring-1 ring-red-500">
+                        <option value="">All Departments</option>
+                    </select>
+                    <select id="curr-filter-year" onchange="loadCurriculum()"
+                        class="bg-main border border-border-color rounded-lg px-3 py-2 text-sm font-bold text-text-main outline-none focus:ring-1 ring-red-500">
+                        <option value="">All Years</option>
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                    </select>
+                    <select id="curr-filter-sem" onchange="loadCurriculum()"
+                        class="bg-main border border-border-color rounded-lg px-3 py-2 text-sm font-bold text-text-main outline-none focus:ring-1 ring-red-500">
+                        <option value="">All Semesters</option>
+                        <option value="ODD">ODD</option>
+                        <option value="EVEN">EVEN</option>
+                    </select>
+                    <input type="text" id="curr-search" placeholder="Search course..." onkeyup="filterCurriculum()"
+                        class="flex-1 min-w-40 bg-main border border-border-color rounded-lg px-3 py-2 text-sm text-text-main outline-none focus:ring-1 ring-red-500">
+                </div>
+
+                <div class="bg-card rounded-2xl border border-border-color shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-main border-b border-border-color">
+                            <tr>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Department</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Year Level</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Semester</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Course Code</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Course Name</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase">Type</th>
+                                <th class="px-8 py-4 text-xs font-bold text-text-muted uppercase text-center">Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="curriculum-list" class="divide-y divide-border-color"></tbody>
                     </table>
                 </div>
             </div>
@@ -1310,7 +1370,7 @@
             <div class="p-8 bg-main flex gap-3">
                 <button onclick="toggleModal('modal-section', false)"
                     class="flex-1 px-4 py-3 font-bold text-text-muted hover:text-text-main">Cancel</button>
-                <button onclick="saveSemester()"
+                <button onclick="saveSection()"
                     class="flex-1 bg-red-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors">Add
                     Section</button>
             </div>
@@ -1324,7 +1384,7 @@
             <div class="p-8 border-b border-border-color">
                 <h3 class="text-xl font-bold text-text-main">Add Elective Group</h3>
             </div>
-            <div class="p-8 space-y-4">
+            <div class="p-8 space-y-4 max-h-[60vh] overflow-y-auto">
                 <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Group Name</label><input
                         type="text" id="eg-name"
                         class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
@@ -1333,12 +1393,117 @@
                         id="eg-desc"
                         class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"
                         rows="2"></textarea></div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Participating Departments
+                        (For FE Groups)</label>
+                    <div id="eg-depts-container"
+                        class="bg-main border border-border-color rounded-xl p-4 max-h-40 overflow-y-auto">
+                        <p class="text-xs text-text-muted">Loading departments...</p>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-text-muted uppercase mb-2">Included Courses</label>
+                    <div class="mb-2">
+                        <input type="text" id="eg-course-search" placeholder="Search courses..."
+                            class="w-full bg-main border border-border-color rounded-lg px-3 py-2 text-sm text-text-main outline-none focus:ring-1 ring-red-500"
+                            onkeyup="filterEGCourses()">
+                    </div>
+                    <div id="eg-courses-container"
+                        class="bg-main border border-border-color rounded-xl p-4 max-h-40 overflow-y-auto space-y-2">
+                        <p class="text-xs text-text-muted">Loading courses...</p>
+                    </div>
+                </div>
             </div>
             <div class="p-8 bg-main flex gap-3"><button onclick="toggleModal('modal-elective-group', false)"
                     class="flex-1 px-4 py-3 font-bold text-text-muted hover:text-text-main">Cancel</button><button
                     onclick="saveElectiveGroup()"
                     class="flex-1 bg-red-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors">Add
                     Group</button></div>
+        </div>
+    </div>
+
+    <!-- Curriculum Modal -->
+    <div id="modal-curriculum" class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-card w-full max-w-md rounded-3xl shadow-2xl border border-border-color overflow-hidden animate-in zoom-in duration-300">
+            <div class="p-8 border-b border-border-color">
+                <h3 class="text-xl font-bold text-text-main">Add Curriculum Mapping</h3>
+            </div>
+            <div class="p-8 space-y-4">
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Department <span
+                            class="text-red-500">*</span></label>
+                    <select id="curr-dept"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main" required>
+                        <option value="">Select Department</option>
+                    </select>
+                </div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Year Level <span
+                            class="text-red-500">*</span></label>
+                    <select id="curr-year"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main" required>
+                        <option value="">Select Year</option>
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                    </select>
+                </div>
+                <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Semester <span
+                            class="text-red-500">*</span></label>
+                    <select id="curr-semester"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main" required>
+                        <option value="">Select Semester</option>
+                        <option value="ODD">ODD</option>
+                        <option value="EVEN">EVEN</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-text-muted uppercase mb-2">Mapping Type</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 text-sm font-semibold text-text-main cursor-pointer">
+                            <input type="radio" name="curr-mapping-type" value="course" checked
+                                onchange="toggleCurriculumMappingType()"
+                                class="w-4 h-4 text-red-500 bg-main border-border-color focus:ring-red-500">
+                            Course
+                        </label>
+                        <label class="flex items-center gap-2 text-sm font-semibold text-text-main cursor-pointer">
+                            <input type="radio" name="curr-mapping-type" value="elective_group"
+                                onchange="toggleCurriculumMappingType()"
+                                class="w-4 h-4 text-red-500 bg-main border-border-color focus:ring-red-500">
+                            Elective Group
+                        </label>
+                    </div>
+                </div>
+
+                <div id="curr-course-container">
+                    <label class="block text-xs font-bold text-text-muted uppercase mb-2">Course <span
+                            class="text-red-500">*</span></label>
+                    <select id="curr-course"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="">Select Course</option>
+                    </select>
+                </div>
+
+                <div id="curr-elective-group-container" class="hidden">
+                    <label class="block text-xs font-bold text-text-muted uppercase mb-2">Elective Group <span
+                            class="text-red-500">*</span></label>
+                    <select id="curr-elective-group"
+                        class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                        <option value="">Select Elective Group</option>
+                    </select>
+                </div>
+                <div><label class="flex items-center gap-2 text-sm font-semibold text-text-muted">
+                        <input type="checkbox" id="curr-mandatory" checked
+                            class="w-4 h-4 text-red-500 rounded bg-main border-border-color">
+                        Mandatory (Core Course)
+                    </label></div>
+            </div>
+            <div class="p-8 bg-main flex gap-3">
+                <button onclick="toggleModal('modal-curriculum', false)"
+                    class="flex-1 px-4 py-3 font-bold text-text-muted hover:text-text-main">Cancel</button>
+                <button onclick="saveCurriculum()"
+                    class="flex-1 bg-red-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors">Save
+                    Mapping</button>
+            </div>
         </div>
     </div>
 
@@ -1490,6 +1655,46 @@
                             type="date" id="leave-end"
                             class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main"></div>
                 </div>
+                <div><label class="flex items-center gap-2 text-sm font-semibold text-text-muted"><input type="checkbox"
+                            id="leave-full-day" checked
+                            class="w-4 h-4 text-red-500 rounded bg-main border-border-color"> Full Day Leave</label>
+                </div>
+
+                <!-- Time Slots - Shown only if NOT full day -->
+                <div id="leave-time-slots" style="display: none;">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Start Time
+                                Slot</label>
+                            <select id="leave-start-slot"
+                                class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                                <option value="">Select Time Slot</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">End Time Slot</label>
+                            <select id="leave-end-slot"
+                                class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">
+                                <option value="">Select Time Slot</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="text-xs text-text-muted italic mt-2">For multi-day leaves: Start slot on first day, End
+                        slot on last day</p>
+                </div>
+
+                <script>
+                    // Toggle time slots visibility based on full-day checkbox
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const fullDayCheckbox = document.getElementById('leave-full-day');
+                        const timeSlotsDiv = document.getElementById('leave-time-slots');
+
+                        if (fullDayCheckbox) {
+                            fullDayCheckbox.addEventListener('change', function () {
+                                timeSlotsDiv.style.display = this.checked ? 'none' : 'block';
+                            });
+                        }
+                    });
+                </script>
+
                 <div><label class="block text-xs font-bold text-text-muted uppercase mb-2">Semester</label>
                     <select id="leave-semester"
                         class="w-full bg-main border border-border-color rounded-xl px-4 py-3 text-text-main">

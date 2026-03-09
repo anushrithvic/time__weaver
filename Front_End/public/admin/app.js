@@ -2,7 +2,7 @@
 // We will fetch these dynamically upon initialization instead of locally.
 let facultyData = [];
 let studentData = [];
-let institutionData = { name: 'TimeWeaver University', year: '2025-2026' };
+let institutionData = { name: 'Amrita Vishwa Vidyapeetham, Coimbatore', year: '2025-2026' };
 let roomData = [];
 let ruleData = [];
 let timetableData = [];
@@ -43,7 +43,8 @@ function showPage(pageId) {
 
 async function loadRooms() {
     try {
-        roomData = await API.get('/rooms/');
+        const response = await API.get('/rooms/');
+        roomData = response.data || response;
         renderRooms();
     } catch (error) {
         console.error('Error loading rooms:', error);
@@ -52,7 +53,8 @@ async function loadRooms() {
 
 async function loadRules() {
     try {
-        ruleData = await API.get('/rules/');
+        const response = await API.get('/rules/');
+        ruleData = response.data || response;
         renderRules();
     } catch (error) {
         console.error('Error loading rules:', error);
@@ -478,15 +480,26 @@ window.resolveConflict = function (id) {
     }
 };
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = 'http://127.0.0.1:8001/api/v1';
+
+// Helper: fetch with JWT auth header
+function authFetch(url, options = {}) {
+    const token = localStorage.getItem('token');
+    const headers = {
+        ...(options.headers || {}),
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+    return fetch(url, { ...options, headers });
+}
 
 // DEPARTMENTS
 let departmentsData = [];
 
 async function loadDepartments() {
     try {
-        const response = await fetch(`${API_BASE}/departments`);
-        departmentsData = await response.json();
+        const response = await authFetch(`${API_BASE}/departments`);
+        const json = await response.json();
+        departmentsData = json.data || json;
         renderDepartments();
         updateDepartmentDropdowns();
     } catch (error) {
@@ -503,13 +516,29 @@ function renderDepartments() {
             <td class="px-8 py-4 font-mono text-sm text-cyan-400 font-bold">${dept.code}</td>
             <td class="px-8 py-4 text-text-main font-semibold">${dept.name}</td>
             <td class="px-8 py-4 text-text-muted text-sm">${dept.description || '-'}</td>
-            <td class="px-8 py-4 text-center">
-                <button onclick="deleteDepartment(${dept.id})" class="text-red-400 hover:text-red-300 transition-colors">
+            <td class="px-8 py-4 text-center flex items-center justify-center gap-2">
+                <button onclick="editDepartment(${dept.id})" class="text-blue-400 hover:text-blue-300 transition-colors" title="Edit">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+                <button onclick="deleteDepartment(${dept.id})" class="text-red-400 hover:text-red-300 transition-colors" title="Delete">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </td>
         </tr>
     `).join('');
+}
+
+let editingDeptId = null;
+
+function editDepartment(id) {
+    const dept = departmentsData.find(d => d.id === id);
+    if (!dept) return;
+
+    editingDeptId = id;
+    document.getElementById('dept-code').value = dept.code || '';
+    document.getElementById('dept-name').value = dept.name || '';
+    document.getElementById('dept-desc').value = dept.description || '';
+    toggleModal('modal-department', true);
 }
 
 async function saveDepartment() {
@@ -520,8 +549,11 @@ async function saveDepartment() {
     if (!code || !name) return alert('Please fill in required fields');
 
     try {
-        const response = await fetch(`${API_BASE}/departments`, {
-            method: 'POST',
+        const url = editingDeptId ? `${API_BASE}/departments/${editingDeptId}` : `${API_BASE}/departments/`;
+        const method = editingDeptId ? 'PUT' : 'POST';
+
+        const response = await authFetch(url, {
+            method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code, name, description })
         });
@@ -531,10 +563,11 @@ async function saveDepartment() {
             document.getElementById('dept-code').value = '';
             document.getElementById('dept-name').value = '';
             document.getElementById('dept-desc').value = '';
+            editingDeptId = null;
             loadDepartments();
         } else {
             const data = await response.json();
-            alert(data.error || 'Failed to create department');
+            alert(data.detail || data.error || 'Failed to save department');
         }
     } catch (error) {
         console.error('Error saving department:', error);
@@ -546,7 +579,7 @@ async function deleteDepartment(id) {
     if (!confirm('Are you sure you want to delete this department?')) return;
 
     try {
-        const response = await fetch(`${API_BASE}/departments/${id}`, { method: 'DELETE' });
+        const response = await authFetch(`${API_BASE}/departments/${id}`, { method: 'DELETE' });
         if (response.ok) {
             loadDepartments();
         }
@@ -570,8 +603,9 @@ let coursesData = [];
 
 async function loadCourses() {
     try {
-        const response = await fetch(`${API_BASE}/courses`);
-        coursesData = await response.json();
+        const response = await authFetch(`${API_BASE}/courses`);
+        const json = await response.json();
+        coursesData = json.data || json;
         renderCourses();
     } catch (error) {
         console.error('Error loading courses:', error);
@@ -589,13 +623,34 @@ function renderCourses() {
             <td class="px-8 py-4 text-text-main text-center">${course.credits}</td>
             <td class="px-8 py-4 text-text-muted text-sm">${course.theory_hours || 0}/${course.lab_hours || 0}/${course.tutorial_hours || 0}</td>
             <td class="px-8 py-4 text-text-muted text-sm">${course.department_name || '-'}</td>
-            <td class="px-8 py-4 text-center">
-                <button onclick="deleteCourse(${course.id})" class="text-red-400 hover:text-red-300 transition-colors">
+            <td class="px-8 py-4 text-center flex items-center justify-center gap-2">
+                <button onclick="editCourse(${course.id})" class="text-blue-400 hover:text-blue-300 transition-colors" title="Edit">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+                <button onclick="deleteCourse(${course.id})" class="text-red-400 hover:text-red-300 transition-colors" title="Delete">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </td>
         </tr>
     `).join('');
+}
+
+let editingCourseId = null;
+
+function editCourse(id) {
+    const course = coursesData.find(c => c.id === id);
+    if (!course) return;
+
+    editingCourseId = id;
+    document.getElementById('course-code').value = course.code || '';
+    document.getElementById('course-name').value = course.name || '';
+    document.getElementById('course-credits').value = course.credits || '';
+    document.getElementById('course-theory').value = course.theory_hours || 0;
+    document.getElementById('course-lab').value = course.lab_hours || 0;
+    document.getElementById('course-tutorial').value = course.tutorial_hours || 0;
+    document.getElementById('course-dept').value = course.department_id || '';
+    document.getElementById('course-lab-required').checked = !!course.requires_lab;
+    toggleModal('modal-course', true);
 }
 
 async function saveCourse() {
@@ -611,10 +666,13 @@ async function saveCourse() {
     if (!code || !name || !credits || !department_id) return alert('Please fill in required fields');
 
     try {
-        const response = await fetch(`${API_BASE}/courses`, {
-            method: 'POST',
+        const url = editingCourseId ? `${API_BASE}/courses/${editingCourseId}` : `${API_BASE}/courses/`;
+        const method = editingCourseId ? 'PUT' : 'POST';
+
+        const response = await authFetch(url, {
+            method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code, name, credits, theory_hours, lab_hours, tutorial_hours, department_id, requires_lab })
+            body: JSON.stringify({ code, name, credits: parseInt(credits), theory_hours: parseInt(theory_hours), lab_hours: parseInt(lab_hours), tutorial_hours: parseInt(tutorial_hours), department_id: parseInt(department_id), requires_lab })
         });
 
         if (response.ok) {
@@ -627,10 +685,11 @@ async function saveCourse() {
             document.getElementById('course-tutorial').value = '0';
             document.getElementById('course-dept').value = '';
             document.getElementById('course-lab-required').checked = false;
+            editingCourseId = null;
             loadCourses();
         } else {
             const data = await response.json();
-            alert(data.error || 'Failed to create course');
+            alert(data.detail || data.error || 'Failed to save course');
         }
     } catch (error) {
         console.error('Error saving course:', error);
@@ -642,7 +701,7 @@ async function deleteCourse(id) {
     if (!confirm('Are you sure you want to delete this course?')) return;
 
     try {
-        const response = await fetch(`${API_BASE}/courses/${id}`, { method: 'DELETE' });
+        const response = await authFetch(`${API_BASE}/courses/${id}`, { method: 'DELETE' });
         if (response.ok) {
             loadCourses();
         }
@@ -656,8 +715,9 @@ let semestersData = [];
 
 async function loadSemesters() {
     try {
-        const response = await fetch(`${API_BASE}/semesters`);
-        semestersData = await response.json();
+        const response = await authFetch(`${API_BASE}/semesters`);
+        const json = await response.json();
+        semestersData = json.data || json;
         renderSemesters();
     } catch (error) {
         console.error('Error loading semesters:', error);
@@ -670,8 +730,8 @@ function renderSemesters() {
 
     tbody.innerHTML = semestersData.map(sem => `
         <tr class="hover:bg-main transition-colors">
-            <td class="px-8 py-4 text-text-main font-semibold">${sem.year}</td>
-            <td class="px-8 py-4 text-text-main">Semester ${sem.semester_number}</td>
+            <td class="px-8 py-4 text-text-main font-semibold">${sem.academic_year || sem.year || sem.name}</td>
+            <td class="px-8 py-4 text-text-main">Semester ${sem.semester_number || sem.semester_type || '-'}</td>
             <td class="px-8 py-4 text-text-muted text-sm">${new Date(sem.start_date).toLocaleDateString()}</td>
             <td class="px-8 py-4 text-text-muted text-sm">${new Date(sem.end_date).toLocaleDateString()}</td>
             <td class="px-8 py-4 text-center">
@@ -679,13 +739,34 @@ function renderSemesters() {
                     ${sem.is_active ? 'Active' : 'Inactive'}
                 </span>
             </td>
-            <td class="px-8 py-4 text-center">
-                <button onclick="deleteSemester(${sem.id})" class="text-red-400 hover:text-red-300 transition-colors">
+            <td class="px-8 py-4 text-center flex items-center justify-center gap-2">
+                <button onclick="editSemester(${sem.id})" class="text-blue-400 hover:text-blue-300 transition-colors" title="Edit">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+                <button onclick="deleteSemester(${sem.id})" class="text-red-400 hover:text-red-300 transition-colors" title="Delete">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </td>
         </tr>
     `).join('');
+}
+
+let editingSemesterId = null;
+
+function editSemester(id) {
+    const sem = semestersData.find(s => s.id === id);
+    if (!sem) return;
+
+    editingSemesterId = id;
+    // Attempting to prepopulate input based on new naming or old naming fields
+    document.getElementById('sem-year').value = sem.academic_year || sem.year || sem.name || '';
+    document.getElementById('sem-number').value = sem.semester_number || sem.semester_type || '1';
+
+    // Format date properly for inputs
+    if (sem.start_date) document.getElementById('sem-start').value = new Date(sem.start_date).toISOString().split('T')[0];
+    if (sem.end_date) document.getElementById('sem-end').value = new Date(sem.end_date).toISOString().split('T')[0];
+
+    toggleModal('modal-semester', true);
 }
 
 async function saveSemester() {
@@ -697,10 +778,22 @@ async function saveSemester() {
     if (!year || !semester_number || !start_date || !end_date) return alert('Please fill in all fields');
 
     try {
-        const response = await fetch(`${API_BASE}/semesters`, {
-            method: 'POST',
+        const url = editingSemesterId ? `${API_BASE}/semesters/${editingSemesterId}` : `${API_BASE}/semesters/`;
+        const method = editingSemesterId ? 'PUT' : 'POST';
+
+        const payload = {
+            name: `${year} Semester ${semester_number}`,
+            academic_year: year,
+            semester_type: isNaN(semester_number) ? semester_number : (semester_number % 2 === 0 ? "EVEN" : "ODD"), // Adapt for the updated schema
+            start_date,
+            end_date,
+            is_active: true
+        };
+
+        const response = await authFetch(url, {
+            method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ year, semester_number, start_date, end_date })
+            body: JSON.stringify(payload)
         });
 
         if (response.ok) {
@@ -709,10 +802,11 @@ async function saveSemester() {
             document.getElementById('sem-number').value = '1';
             document.getElementById('sem-start').value = '';
             document.getElementById('sem-end').value = '';
+            editingSemesterId = null;
             loadSemesters();
         } else {
             const data = await response.json();
-            alert(data.error || 'Failed to create semester');
+            alert(data.detail || data.error || 'Failed to save semester');
         }
     } catch (error) {
         console.error('Error saving semester:', error);
@@ -724,7 +818,7 @@ async function deleteSemester(id) {
     if (!confirm('Are you sure you want to delete this semester?')) return;
 
     try {
-        const response = await fetch(`${API_BASE}/semesters/${id}`, { method: 'DELETE' });
+        const response = await authFetch(`${API_BASE}/semesters/${id}`, { method: 'DELETE' });
         if (response.ok) {
             loadSemesters();
         }
@@ -738,8 +832,9 @@ let sectionsData = [];
 
 async function loadSections() {
     try {
-        const response = await fetch(`${API_BASE}/sections`);
-        sectionsData = await response.json();
+        const response = await authFetch(`${API_BASE}/sections`);
+        const json = await response.json();
+        sectionsData = json.data || json;
         renderSections();
     } catch (error) {
         console.error('Error loading sections:', error);
@@ -756,13 +851,32 @@ function renderSections() {
             <td class="px-8 py-4 text-text-muted text-sm">${section.department_name || '-'}</td>
             <td class="px-8 py-4 text-text-muted text-sm">${section.batch_year_start} - ${section.batch_year_end}</td>
             <td class="px-8 py-4 text-text-main text-center">${section.student_count}</td>
-            <td class="px-8 py-4 text-center">
-                <button onclick="deleteSection(${section.id})" class="text-red-400 hover:text-red-300 transition-colors">
+            <td class="px-8 py-4 text-center flex items-center justify-center gap-2">
+                <button onclick="editSection(${section.id})" class="text-blue-400 hover:text-blue-300 transition-colors" title="Edit">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+                <button onclick="deleteSection(${section.id})" class="text-red-400 hover:text-red-300 transition-colors" title="Delete">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </td>
         </tr>
     `).join('');
+}
+
+let editingSectionId = null;
+
+function editSection(id) {
+    const section = sectionsData.find(s => s.id === id);
+    if (!section) return;
+
+    editingSectionId = id;
+    document.getElementById('section-name').value = section.name || '';
+    document.getElementById('section-dept').value = section.department_id || '';
+    document.getElementById('section-start').value = section.batch_year_start || '';
+    document.getElementById('section-end').value = section.batch_year_end || '';
+    document.getElementById('section-count').value = section.student_count || '';
+
+    toggleModal('modal-section', true);
 }
 
 async function saveSection() {
@@ -777,10 +891,13 @@ async function saveSection() {
     }
 
     try {
-        const response = await fetch(`${API_BASE}/sections`, {
-            method: 'POST',
+        const url = editingSectionId ? `${API_BASE}/sections/${editingSectionId}` : `${API_BASE}/sections/`;
+        const method = editingSectionId ? 'PUT' : 'POST';
+
+        const response = await authFetch(url, {
+            method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, department_id, batch_year_start, batch_year_end, student_count })
+            body: JSON.stringify({ name, department_id: parseInt(department_id), batch_year_start: parseInt(batch_year_start), batch_year_end: parseInt(batch_year_end), student_count: parseInt(student_count) })
         });
 
         if (response.ok) {
@@ -790,10 +907,11 @@ async function saveSection() {
             document.getElementById('section-start').value = '';
             document.getElementById('section-end').value = '';
             document.getElementById('section-count').value = '';
+            editingSectionId = null;
             loadSections();
         } else {
             const data = await response.json();
-            alert(data.error || 'Failed to create section');
+            alert(data.detail || data.error || 'Failed to save section');
         }
     } catch (error) {
         console.error('Error saving section:', error);
@@ -805,7 +923,7 @@ async function deleteSection(id) {
     if (!confirm('Are you sure you want to delete this section?')) return;
 
     try {
-        const response = await fetch(`${API_BASE}/sections/${id}`, { method: 'DELETE' });
+        const response = await authFetch(`${API_BASE}/sections/${id}`, { method: 'DELETE' });
         if (response.ok) {
             loadSections();
         }
