@@ -128,31 +128,65 @@ class GeneticAlgorithmGenerator(TimetableGeneratorBase):
         resources: dict
     ):
         """Generate a completely random schedule."""
+        from sqlalchemy import select
+        from app.models.faculty_course import FacultyCourse
+        from app.models.course import CourseCategory
+
         sections = resources["sections"]
         rooms = resources["rooms"]
         time_slots = resources["time_slots"]
         days = resources["days"]
         semester = resources["semester"]
-        
+
         for section in sections:
             # Get courses for this section
             courses_data = CurriculumService.get_all_courses_for_section(
                 self.db, section, semester
             )
-            
+
             all_courses = (
                 courses_data.get("core", []) +
                 courses_data.get("electives", []) +
                 courses_data.get("projects", [])
             )
-            
-            # Assign random slots for each course
+
             for course in all_courses:
+                # Find available rooms based on lab requirements and capacity
+                valid_rooms = [r for r in rooms if r.capacity >= section.student_count]
+                if course.requires_lab:
+                    valid_rooms = [r for r in valid_rooms if r.room_type == 'lab' and r.has_lab_equipment]
+                else:
+                    valid_rooms = [r for r in valid_rooms if r.room_type in ('classroom', 'auditorium', 'seminar_hall')]
+
+                # Fallback if no exact match
+                if not valid_rooms:
+                    valid_rooms = rooms
+
+                # Find assigned faculty for this specific course, section, and semester
+                stmt_fc = select(FacultyCourse).where(
+                    FacultyCourse.course_id == course.id,
+                    FacultyCourse.section_id == section.id,
+                    FacultyCourse.semester_id == semester.id
+                )
+                fc = self.db.execute(stmt_fc).scalar_one_or_none()
+                assigned_faculty_id = fc.faculty_id if fc else None
+
+                # Calculate duration based on course details
+                duration_slots = course.lab_hours if course.requires_lab else course.lecture_hours
+                if duration_slots <= 0:
+                    duration_slots = 1
+
                 # Random room, time, day
-                room = random.choice(rooms)
-                time_slot = random.choice(time_slots)
-                day = random.choice(days)
+                room = random.choice(valid_rooms)
                 
+                # Ensure we don't pick a starting slot that overflows the day
+                max_start_index = len(time_slots) - duration_slots
+                if max_start_index < 0:
+                    max_start_index = 0
+                time_slot = random.choice(time_slots[:max_start_index + 1]) if max_start_index > 0 else time_slots[0]
+                
+                day = random.choice(days)
+
                 # Create slot
                 try:
                     self.create_slot_assignment(
@@ -162,11 +196,12 @@ class GeneticAlgorithmGenerator(TimetableGeneratorBase):
                         room_id=room.id,
                         start_slot_id=time_slot.id,
                         day_of_week=day,
-                        duration_slots=1
+                        duration_slots=duration_slots,
+                        primary_faculty_id=assigned_faculty_id
                     )
                 except Exception:
                     continue  # Skip on error
-        
+
         self.db.commit()
     
     def _selection(

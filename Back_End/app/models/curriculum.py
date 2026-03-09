@@ -28,14 +28,15 @@ class Curriculum(Base):
         department_id (int): Foreign key to departments
         year_level (int): Academic year level (1-4)
         semester_type (SemesterType): ODD or EVEN semester
-        course_id (int): Foreign key to courses
+        course_id (int): Foreign key to courses (nullable if elective group)
+        elective_group_id (int): Foreign key to elective groups (nullable if course)
         is_mandatory (bool): True for CORE courses, False for electives
         created_at (datetime): Timestamp when created
     
     Example:
         # CSE Year 3 ODD Semester Curriculum
         Curriculum(dept_id=1, year_level=3, semester_type='ODD', course_id=101, is_mandatory=True)
-        Curriculum(dept_id=1, year_level=3, semester_type='ODD', course_id=201, is_mandatory=False)  # PE1
+        Curriculum(dept_id=1, year_level=3, semester_type='ODD', elective_group_id=1, is_mandatory=False)  # PE1
     """
     __tablename__ = "curriculum"
     
@@ -43,19 +44,24 @@ class Curriculum(Base):
     department_id = Column(Integer, ForeignKey("departments.id", ondelete="CASCADE"), nullable=False, index=True)
     year_level = Column(Integer, nullable=False)  # 1, 2, 3, or 4
     semester_type = Column(String, nullable=False)  # ODD or EVEN
-    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=True, index=True)
+    elective_group_id = Column(Integer, ForeignKey("elective_groups.id", ondelete="CASCADE"), nullable=True, index=True)
     is_mandatory = Column(Boolean, nullable=False, default=True)  # CORE=True, Elective=False
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     __table_args__ = (
-        UniqueConstraint('department_id', 'year_level', 'semester_type', 'course_id', 
-                        name='uq_curriculum_dept_year_sem_course'),
+        UniqueConstraint('department_id', 'year_level', 'semester_type', 'course_id', 'elective_group_id',
+                        name='uq_curriculum_dept_year_sem_course_group'),
         CheckConstraint('year_level >= 1 AND year_level <= 4', name='check_year_level_valid'),
+        CheckConstraint(
+            '(course_id IS NOT NULL AND elective_group_id IS NULL) OR (course_id IS NULL AND elective_group_id IS NOT NULL)',
+            name='check_course_or_group'
+        ),
     )
     
     def __repr__(self):
-        return f"<Curriculum(dept={self.department_id}, year={self.year_level}, sem={self.semester_type}, course={self.course_id})>"
+        return f"<Curriculum(dept={self.department_id}, year={self.year_level}, sem={self.semester_type}, course={self.course_id}, group={self.elective_group_id})>"
 
 
 class CourseElectiveAssignment(Base):
@@ -82,15 +88,15 @@ class CourseElectiveAssignment(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     elective_group_id = Column(Integer, ForeignKey("elective_groups.id", ondelete="CASCADE"), nullable=False, index=True)
-    semester_id = Column(Integer, ForeignKey("semesters.id", ondelete="CASCADE"), nullable=False, index=True)
+    semester_id = Column(Integer, ForeignKey("semesters.id", ondelete="CASCADE"), nullable=True, index=True)
     course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
     assigned_room_id = Column(Integer, ForeignKey("rooms.id", ondelete="SET NULL"), nullable=True)  # Pre-assigned room for PE
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     __table_args__ = (
-        UniqueConstraint('elective_group_id', 'semester_id', 'course_id', 
-                        name='uq_elective_assignment_group_sem_course'),
+        UniqueConstraint('elective_group_id', 'course_id', 
+                        name='uq_elective_assignment_group_course'),
     )
     
     def __repr__(self):

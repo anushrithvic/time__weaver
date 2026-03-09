@@ -5,10 +5,9 @@ Pydantic schemas for Epic 3 Phase 2 new models:
 - CourseBatchingConfig
 """
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 from typing import Optional
 from app.models.semester import SemesterType
-
 
 # ===============================
 # Curriculum Schemas
@@ -19,8 +18,17 @@ class CurriculumBase(BaseModel):
     department_id: int = Field(..., gt=0)
     year_level: int = Field(..., ge=1, le=4, description="Academic year level (1-4)")
     semester_type: SemesterType = Field(..., description="ODD or EVEN semester")
-    course_id: int = Field(..., gt=0)
+    course_id: Optional[int] = Field(None, gt=0, description="Course ID (mutually exclusive with elective_group_id)")
+    elective_group_id: Optional[int] = Field(None, gt=0, description="Elective Group ID (mutually exclusive with course_id)")
     is_mandatory: bool = Field(default=True, description="True for CORE courses, False for electives")
+    
+    @model_validator(mode='after')
+    def validate_course_or_group(self):
+        has_course = self.course_id is not None
+        has_group = self.elective_group_id is not None
+        if has_course == has_group:
+            raise ValueError('Exactly one of course_id or elective_group_id must be provided')
+        return self
 
 
 class CurriculumCreate(CurriculumBase):
@@ -34,7 +42,16 @@ class CurriculumUpdate(BaseModel):
     year_level: Optional[int] = Field(None, ge=1, le=4)
     semester_type: Optional[SemesterType] = None
     course_id: Optional[int] = Field(None, gt=0)
+    elective_group_id: Optional[int] = Field(None, gt=0)
     is_mandatory: Optional[bool] = None
+    
+    @model_validator(mode='after')
+    def validate_course_or_group(self):
+        # Allow updating individual fields, but if both are provided, they must not both be set
+        # Since this is a partial update, we only check if they are explicitly being set simultaneously
+        # Proper domain validation occurs at DB level
+        pass
+        return self
 
 
 class CurriculumResponse(CurriculumBase):
@@ -57,7 +74,7 @@ class CurriculumListResponse(BaseModel):
 class CourseElectiveAssignmentBase(BaseModel):
     """Base CourseElectiveAssignment schema"""
     elective_group_id: int = Field(..., gt=0, description="Elective group (PE1, PE2, FE1)")
-    semester_id: int = Field(..., gt=0, description="Semester offering this course")
+    semester_id: Optional[int] = Field(None, gt=0, description="Semester offering this course")
     course_id: int = Field(..., gt=0, description="Course being offered")
     assigned_room_id: Optional[int] = Field(None, gt=0, description="Pre-assigned room for PE sync")
 

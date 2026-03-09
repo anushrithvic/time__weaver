@@ -35,10 +35,10 @@ app = FastAPI(
 # This enables cross-origin requests from the specified origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,  # Allowed frontend origins
-    allow_credentials=True,  # Allow cookies/credentials
-    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"],  # Allow all headers
+    allow_origins=["*"],  # Allow all origins for local debugging
+    allow_credentials=False,  # Must be False when allow_origins is ["*"]
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Add audit logging middleware (Epic 7: Phase 2)

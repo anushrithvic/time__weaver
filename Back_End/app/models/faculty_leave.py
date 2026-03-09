@@ -25,6 +25,7 @@ User Stories: 3.6, 3.8
 """
 
 from sqlalchemy import Column, Integer, String, Date, Boolean, DateTime, ForeignKey, JSON, Text, Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
@@ -64,13 +65,13 @@ class LeaveStatus(str, enum.Enum):
 class FacultyLeave(Base):
     """
     Faculty leave record with impact analysis and resolution tracking.
-    
+
     Workflow:
     1. Create leave record → status = PROPOSED
     2. System analyzes impact → stores in impact_analysis
     3. Admin reviews proposal → status = APPROVED/REJECTED
     4. Apply changes to timetable → status = APPLIED
-    
+
     Attributes:
         id (int): Primary key
         faculty_id (int): Faculty member on leave
@@ -78,37 +79,47 @@ class FacultyLeave(Base):
         timetable_id (int): Affected timetable (optional)
         start_date (date): Leave start date
         end_date (date): Leave end date
+        is_full_day (bool): True if full day leave, False if partial (default: True)
+        start_time_slot_id (int): If not full day, the starting time slot on start_date
+        end_time_slot_id (int): If not full day, the ending time slot on end_date
+        affected_slot_ids (list[int]): Array of all time slot IDs affected by this leave
         leave_type (LeaveType): Type of leave
         strategy (LeaveStrategy): Chosen resolution strategy
         status (LeaveStatus): Current status
-        
+
         replacement_faculty_id (int): Replacement faculty (if strategy=REPLACEMENT)
         impact_analysis (dict): JSON with affected slots and proposals
         resolution_details (dict): JSON with applied changes
-        
+
         reason (str): Leave reason/notes
         created_by (int): User who created leave record
     """
     __tablename__ = "faculty_leaves"
-    
+
     # Core Fields
     id = Column(Integer, primary_key=True, index=True)
     faculty_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     semester_id = Column(Integer, ForeignKey("semesters.id"), nullable=False, index=True)
     timetable_id = Column(Integer, ForeignKey("timetables.id"), nullable=True)
-    
+
     # Leave Period
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
-    
+
+    # Time Slot Selection (for partial day leaves)
+    is_full_day = Column(Boolean, default=True, nullable=False)  # True = all day, False = specific slots
+    start_time_slot_id = Column(Integer, ForeignKey("time_slots.id"), nullable=True)  # FK to time_slots for start_date
+    end_time_slot_id = Column(Integer, ForeignKey("time_slots.id"), nullable=True)    # FK to time_slots for end_date
+    affected_slot_ids = Column(ARRAY(Integer), default=list, nullable=False)         # All affected slot IDs
+
     # Leave Details
     leave_type = Column(String, nullable=False)
     strategy = Column(String, nullable=False, default=LeaveStrategy.WITHIN_SECTION_SWAP.value)
     status = Column(String, nullable=False, default=LeaveStatus.PROPOSED.value, index=True)
-    
+
     # Resolution
     replacement_faculty_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    
+
     # Impact & Resolution Tracking (JSON)
     impact_analysis = Column(JSON, nullable=True)
     """
@@ -132,7 +143,7 @@ class FacultyLeave(Base):
         "locked_slots": 3
     }
     """
-    
+
     resolution_details = Column(JSON, nullable=True)
     """
     Structure:
@@ -144,11 +155,11 @@ class FacultyLeave(Base):
         "timestamp": "2024-02-04T17:00:00Z"
     }
     """
-    
+
     # Metadata
     reason = Column(Text, nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
-    
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

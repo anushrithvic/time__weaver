@@ -16,7 +16,7 @@ from app.schemas.auth import (
     LoginResponse, Token, ForgotPasswordRequest, ForgotPasswordResponse,
     ResetPasswordRequest, ResetPasswordResponse
 )
-from app.schemas.user import UserResponse
+from app.schemas.user import UserResponse, UserCreate
 from app.core.security import (
     verify_password, create_access_token, hash_password,
     generate_reset_token, create_reset_token_expiry, is_reset_token_expired
@@ -104,6 +104,56 @@ async def login(
         token_type="bearer",
         user=UserResponse.model_validate(user)
     )
+
+
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register(
+    user_in: UserCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Public registration endpoint.
+    Used for first-time system initialization (admin) or open registration if enabled.
+    """
+    # Check if username already exists
+    query = select(User).where(User.username == user_in.username)
+    result = await db.execute(query)
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Username '{user_in.username}' already exists"
+        )
+    
+    # Check if email already exists
+    query = select(User).where(User.email == user_in.email)
+    result = await db.execute(query)
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Email '{user_in.email}' already exists"
+        )
+    
+    # Create user
+    user_data = user_in.model_dump(exclude={'password'})
+    user_data['hashed_password'] = hash_password(user_in.password)
+    
+    user = User(**user_data)
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    
+    # Audit log
+    audit_log = AuditLog(
+        user_id=user.id,
+        action="register",
+        entity_type="user",
+        entity_id=user.id,
+        changes={"username": user.username, "role": user.role}
+    )
+    db.add(audit_log)
+    await db.commit()
+    
+    return user
 
 
 @router.get("/me", response_model=UserResponse)

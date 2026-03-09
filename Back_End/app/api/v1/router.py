@@ -28,7 +28,7 @@ from app.api.v1.endpoints import (
     semesters, departments, sections, courses,
     elective_groups, rooms, time_slots, constraints, auth, users, audit_logs,
     timetables, institutional_rules, faculty_leaves, faculty, faculty_preferences,
-    students, faculty_courses
+    students, faculty_courses, curriculum, course_elective_assignments
 )
 
 # Create main API router for version 1
@@ -64,8 +64,14 @@ api_router.include_router(sections.router, prefix="/sections", tags=["sections"]
 # Epic 1: User Story 1.4 - Courses
 api_router.include_router(courses.router, prefix="/courses", tags=["courses"])
 
+# Epic 1: User Story 1.4 - Curriculum Management (course-to-year mapping)
+api_router.include_router(curriculum.router, prefix="/curriculum", tags=["curriculum"])
+
 # Epic 1: User Story 1.5 - Elective Groups
 api_router.include_router(elective_groups.router, prefix="/elective-groups", tags=["elective-groups"])
+
+# Epic 1: User Story 1.5 - Course Elective Assignments (per semester)
+api_router.include_router(course_elective_assignments.router, prefix="/course-elective-assignments", tags=["course-elective-assignments"])
 
 # Epic 1: User Story 1.6 - Rooms
 api_router.include_router(rooms.router, prefix="/rooms", tags=["rooms"])

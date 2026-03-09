@@ -40,7 +40,15 @@ from app.models.faculty_leave import FacultyLeave, LeaveType, LeaveStrategy, Lea
 from app.models.timetable import Timetable, TimetableSlot
 from app.services.leave_impact_analyzer import LeaveImpactAnalyzer
 from app.services.slot_locking_service import SlotLockingService
-from pydantic import BaseModel, Field, validator
+from app.schemas.faculty_leave import (
+    LeaveAnalyzeRequest,
+    LeaveCreateRequest,
+    LeaveResponse,
+    LeaveImpactResponse,
+    SlotLockRequest,
+    SlotLockResponse
+)
+from pydantic import BaseModel, Field
 
 # Create two routers
 leaves_router = APIRouter()
@@ -50,91 +58,14 @@ locks_router = APIRouter()
 # ============================================================================
 # SCHEMAS
 # ============================================================================
-
-class LeaveAnalyzeRequest(BaseModel):
-    """Request to analyze faculty leave impact"""
-    faculty_id: int = Field(..., gt=0, description="Faculty member ID")
-    timetable_id: int = Field(..., gt=0, description="Timetable ID")
-    start_date: date = Field(..., description="Leave start date")
-    end_date: date = Field(..., description="Leave end date")
-    leave_type: LeaveType = Field(..., description="Type of leave")
-    strategy: LeaveStrategy = Field(default=LeaveStrategy.WITHIN_SECTION_SWAP, description="Resolution strategy")
-    
-    @validator('end_date')
-    def end_after_start(cls, v, values):
-        if 'start_date' in values and v < values['start_date']:
-            raise ValueError('end_date must be after start_date')
-        return v
-
-
-class LeaveCreateRequest(BaseModel):
-    """Request to create faculty leave"""
-    faculty_id: int = Field(..., gt=0)
-    semester_id: int = Field(..., gt=0)
-    timetable_id: Optional[int] = Field(None, gt=0)
-    start_date: date
-    end_date: date
-    leave_type: LeaveType
-    strategy: LeaveStrategy = LeaveStrategy.WITHIN_SECTION_SWAP
-    reason: Optional[str] = None
-    replacement_faculty_id: Optional[int] = Field(None, gt=0, description="Optional replacement faculty")
-    
-    @validator('end_date')
-    def end_after_start(cls, v, values):
-        if 'start_date' in values and v < values['start_date']:
-            raise ValueError('end_date must be after start_date')
-        return v
-
-
-class LeaveResponse(BaseModel):
-    """Response schema for faculty leave"""
-    id: int
-    faculty_id: int
-    semester_id: int
-    timetable_id: Optional[int]
-    start_date: date
-    end_date: date
-    leave_type: str
-    strategy: str
-    status: str
-    replacement_faculty_id: Optional[int]
-    impact_analysis: Optional[dict]
-    resolution_details: Optional[dict]
-    reason: Optional[str]
-    created_by: Optional[int]
-    created_at: datetime
-    approved_at: Optional[datetime]
-    applied_at: Optional[datetime]
-    
-    class Config:
-        from_attributes = True
-
-
-class LeaveImpactResponse(BaseModel):
-    """Response schema for leave impact analysis"""
-    affected_slots: list[int]
-    affected_sections: list[int]
-    locked_slots: list[int]
-    locked_affected_slots: list[int]
-    swap_proposals: list[dict]
-    total_impact: int
-    swappable_slots: int
-    locked_count: int
-    analysis_timestamp: str
-
-
-class SlotLockRequest(BaseModel):
-    """Request to lock/unlock slots"""
-    timetable_id: int = Field(..., gt=0, description="Timetable ID")
-    slot_ids: list[int] = Field(..., min_items=1, description="Slot IDs to lock/unlock")
-
-
-class SlotLockResponse(BaseModel):
-    """Response for slot lock/unlock operation"""
-    timetable_id: int
-    locked_count: int
-    slot_ids: list[int]
-    message: str
+# All schema definitions have been moved to app.schemas.faculty_leave
+# For the complete schema definitions, see:
+# - LeaveAnalyzeRequest: Request for leave impact analysis
+# - LeaveCreateRequest: Request for creating faculty leave
+# - LeaveResponse: Leave data response
+# - LeaveImpactResponse: Leave impact analysis response
+# - SlotLockRequest: Request to lock/unlock slots
+# - SlotLockResponse: Slot lock operation response
 
 
 # ============================================================================

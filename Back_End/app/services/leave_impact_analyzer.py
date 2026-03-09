@@ -143,35 +143,76 @@ class LeaveImpactAnalyzer:
         
         return list(set(locked_slot_ids))  # Remove duplicates
     
-    def get_section_faculty(
+    def get_qualified_substitutes(
         self,
-        section_id: int,
-        timetable_id: int
+        course_id: int,
+        department_id: int,
+        original_faculty_id: int
     ) -> dict[int, str]:
         """
-        Get all faculty teaching a particular section.
-        
-        Args:
-            section_id: Section ID
-            timetable_id: Timetable ID
-            
-        Returns:
-            {faculty_id: faculty_name} for section
+        Find faculty qualified to teach the course (they teach it in other sections),
+        fallback to faculty in the same department.
         """
-        slots = self.db.query(TimetableSlot).filter(
+        from app.models.faculty_course import FacultyCourse
+        from app.models.faculty import Faculty
+        from app.models.user import User
+        
+        candidates = {}
+        
+        # Priority 1: Faculty already teaching this course to other sections
+        stmt = select(FacultyCourse.faculty_id).where(
+            FacultyCourse.course_id == course_id,
+            FacultyCourse.faculty_id != original_faculty_id
+        ).distinct()
+        qualified_ids = [row[0] for row in self.db.execute(stmt)]
+        
+        # Priority 2: Anyone in the same department
+        if not qualified_ids:
+            stmt2 = select(Faculty.id).where(
+                Faculty.department_id == department_id,
+                Faculty.id != original_faculty_id
+            )
+            qualified_ids = [row[0] for row in self.db.execute(stmt2)]
+            
+        # Get names for the candidates
+        if qualified_ids:
+            fac_stmt = select(Faculty.id, User.full_name).join(
+                User, Faculty.user_id == User.id
+            ).where(Faculty.id.in_(qualified_ids))
+            
+            for fac_id, name in self.db.execute(fac_stmt):
+                candidates[fac_id] = name
+                
+        return candidates
+
+    def check_faculty_availability(
+        self,
+        faculty_id: int,
+        timetable_id: int,
+        day_of_week: int,
+        start_slot_id: int,
+        duration_slots: int
+    ) -> bool:
+        """Check if a faculty member is free during a specific time block."""
+        # Check all slots they are assigned to
+        stmt = select(TimetableSlot).where(
             TimetableSlot.timetable_id == timetable_id,
-            TimetableSlot.section_id == section_id,
-            TimetableSlot.primary_faculty_id.isnot(None)
-        ).all()
+            TimetableSlot.primary_faculty_id == faculty_id,
+            TimetableSlot.day_of_week == day_of_week
+        )
         
-        faculty_map = {}
+        slots = self.db.execute(stmt).scalars().all()
+        
         for slot in slots:
-            if slot.primary_faculty_id and slot.primary_faculty_id not in faculty_map:
-                # Placeholder - in real app, query User model
-                faculty_map[slot.primary_faculty_id] = f"Faculty-{slot.primary_faculty_id}"
-        
-        return faculty_map
-    
+            # Check for overlap
+            slot_end = slot.start_slot_id + slot.duration_slots
+            req_end = start_slot_id + duration_slots
+            
+            if not (start_slot_id >= slot_end or req_end <= slot.start_slot_id):
+                return False  # Overlap found
+                
+        return True
+
     def propose_within_section_swaps(
         self,
         affected_slots: list[TimetableSlot],
@@ -179,62 +220,74 @@ class LeaveImpactAnalyzer:
         granularity: str = "single_slot"
     ) -> list[dict]:
         """
-        Propose faculty swaps within same section.
-        
-        Args:
-            affected_slots: Slots needing reassignment
-            locked_slot_ids: Slots that cannot be changed
-            granularity: "single_slot", "same_day", "full_week", "admin_choice"
-            
-        Returns:
-            List of swap proposals
+        Propose faculty swaps based on subject qualification and availability.
         """
         proposals = []
         
         for slot in affected_slots:
-            # Skip locked slots
             if slot.id in locked_slot_ids:
                 continue
             
-            # Get other faculty teaching this section
-            section_faculty = self.get_section_faculty(slot.section_id, slot.timetable_id)
+            # Identify department
+            section = self.db.get(Section, slot.section_id)
+            if not section:
+                continue
+                
+            # Get qualified candidates (taught this course or in same Dept)
+            candidates = self.get_qualified_substitutes(
+                slot.course_id, 
+                section.department_id, 
+                slot.primary_faculty_id
+            )
             
-            # Remove the faculty on leave
-            section_faculty.pop(slot.primary_faculty_id, None)
-            
-            if not section_faculty:
-                # No faculty to swap with
+            if not candidates:
                 proposals.append({
                     "slot_id": slot.id,
                     "problem": "no_faculty_available",
-                    "recommendation": "REPLACEMENT or REDISTRIBUTE"
+                    "recommendation": "CANCELLATION"
                 })
                 continue
             
-            # Get section details for home room check
-            section = self.db.get(Section, slot.section_id)
-            home_room_id = section.dedicated_room_id if section else None
+            home_room_id = section.dedicated_room_id
+            found_sub = False
             
-            # Propose swaps with each available faculty
-            for faculty_id, faculty_name in section_faculty.items():
-                proposal = {
+            for faculty_id, faculty_name in candidates.items():
+                # Verify they are actually free during this time
+                is_free = self.check_faculty_availability(
+                    faculty_id, 
+                    slot.timetable_id, 
+                    slot.day_of_week, 
+                    slot.start_slot_id, 
+                    slot.duration_slots
+                )
+                
+                if is_free:
+                    proposal = {
+                        "slot_id": slot.id,
+                        "day": slot.day_of_week,
+                        "start_slot": slot.start_slot_id,
+                        "duration": slot.duration_slots,
+                        "current_faculty_id": slot.primary_faculty_id,
+                        "proposed_faculty_id": faculty_id,
+                        "proposed_faculty_name": faculty_name,
+                        "same_section": False, 
+                        "home_room_match": (slot.room_id == home_room_id) if home_room_id else False,
+                        "current_room_id": slot.room_id,
+                        "granularity": granularity,
+                        "priority": "high"
+                    }
+                    proposals.append(proposal)
+                    found_sub = True
+                    break  # Found best substitute for this slot
+                    
+            if not found_sub:
+                proposals.append({
                     "slot_id": slot.id,
-                    "day": slot.day_of_week,
-                    "start_slot": slot.start_slot_id,
-                    "duration": slot.duration_slots,
-                    "current_faculty_id": slot.primary_faculty_id,
-                    "proposed_faculty_id": faculty_id,
-                    "proposed_faculty_name": faculty_name,
-                    "same_section": True,
-                    "home_room_match": (slot.room_id == home_room_id) if home_room_id else False,
-                    "current_room_id": slot.room_id,
-                    "granularity": granularity,
-                    "priority": "high" if (slot.room_id == home_room_id) else "medium"
-                }
-                proposals.append(proposal)
-                break  # Only first suggestion for now
+                    "problem": "candidates_busy",
+                    "recommendation": "CANCELLATION"
+                })
         
-        # Sort by priority (home room matches first)
+        # Sort by priority
         proposals.sort(key=lambda x: (
             x.get("priority") == "high",
             x.get("home_room_match", False)
