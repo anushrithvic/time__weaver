@@ -17,7 +17,7 @@ from app.core.security import get_password_hash
 from sqlalchemy import select
 # Import base to register all models with SQLAlchemy
 from app.db import base
-
+import uuid
 
 # ============================================================================
 # ASYNC EVENT LOOP CONFIGURATION
@@ -214,16 +214,12 @@ def sample_leave_data() -> dict:
 # ============================================================================
 
 @pytest.fixture
-async def sample_admin_user(test_db: AsyncSession, setup_admin):
-   """Get the admin user model instance"""
-   return setup_admin
-
-@pytest.fixture
-async def sample_semester(test_db: AsyncSession) -> "Semester":
+async def sample_semester(test_db: AsyncSession):
     from app.models.semester import Semester, SemesterType
     from datetime import date
+    unique_name = f"Fall 2024_{uuid.uuid4().hex[:6]}"
     sem = Semester(
-        name="Fall 2024",
+        name=unique_name,
         start_date=date(2024, 8, 1),
         end_date=date(2024, 12, 15),
         semester_type=SemesterType.ODD
@@ -234,11 +230,12 @@ async def sample_semester(test_db: AsyncSession) -> "Semester":
     return sem
 
 @pytest.fixture
-async def sample_timetable(test_db: AsyncSession, sample_semester, sample_admin_user) -> "Timetable":
+async def sample_timetable(test_db: AsyncSession, sample_semester, sample_admin_user):
     from app.models.timetable import Timetable
+    unique_tt_name = f"Test Timetable_{uuid.uuid4().hex[:6]}"
     tt = Timetable(
         semester_id=sample_semester.id,
-        name="Test Timetable",
+        name=unique_tt_name,
         status="generating",
         created_by_user_id=sample_admin_user.id
     )
@@ -248,11 +245,12 @@ async def sample_timetable(test_db: AsyncSession, sample_semester, sample_admin_
     return tt
 
 @pytest.fixture
-async def sample_rooms(test_db: AsyncSession) -> list:
+async def sample_rooms(test_db: AsyncSession):
     from app.models.room import Room
+    unique_id = uuid.uuid4().hex[:4]
     rooms = [
-        Room(name="101", capacity=50, building="Bio Block"),
-        Room(name="102", capacity=30, building="Bio Block")
+        Room(name=f"101_{unique_id}", capacity=50, building="Bio Block"),
+        Room(name=f"102_{unique_id}", capacity=30, building="Bio Block")
     ]
     test_db.add_all(rooms)
     await test_db.commit()
@@ -260,42 +258,18 @@ async def sample_rooms(test_db: AsyncSession) -> list:
     return rooms
 
 @pytest.fixture
-async def sample_time_slots(test_db: AsyncSession) -> list:
-    from app.models.time_slot import TimeSlot
-    from datetime import time
-    slots = [
-        TimeSlot(start_time=time(9,0), end_time=time(10,0)),
-        TimeSlot(start_time=time(10,0), end_time=time(11,0))
-    ]
-    test_db.add_all(slots)
-    await test_db.commit()
-    for s in slots: await test_db.refresh(s)
-    return slots
-
-@pytest.fixture
-async def sample_sections(test_db: AsyncSession, sample_semester) -> list:
-    # Need a course first
+async def sample_sections(test_db: AsyncSession, sample_semester):
     from app.models.course import Course, CourseCategory
     from app.models.section import Section
-    
-    c = Course(code="CS101", name="Intro to CS", credits=3, category=CourseCategory.CORE)
+    unique_code = f"CS101_{uuid.uuid4().hex[:4]}"
+    c = Course(code=unique_code, name="Intro to CS", credits=3, category=CourseCategory.CORE)
     test_db.add(c)
     await test_db.commit()
     
     sections = [
-        Section(name="A", semester_id=sample_semester.id, course_id=c.id, student_count=40)
+        Section(name=f"A_{uuid.uuid4().hex[:4]}", semester_id=sample_semester.id, course_id=c.id, student_count=40)
     ]
     test_db.add_all(sections)
     await test_db.commit()
     for s in sections: await test_db.refresh(s)
     return sections
-
-@pytest.fixture(autouse=True)
-async def cleanup_test_data():
-    """
-    Cleanup test data after each test.
-    """
-    yield
-    # Cleanup handled by rollback transaction strategy in test_db fixture usually,
-    # but since we are not using that strategy (test_db yields session then rollbacks), it works.
-    pass

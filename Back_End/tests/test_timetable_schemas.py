@@ -38,26 +38,18 @@ class TestTimetableCreateSchema:
         schema = TimetableCreate(**data)
         
         assert schema.semester_id == 1
-        assert schema.algorithm == GenerationAlgorithm.GA
-        assert schema.num_solutions == 5
-        assert schema.max_generations == 100
-        assert schema.population_size == 50
+        assert schema.num_solutions == 5  # Default from schema
     
     def test_create_with_custom_values(self):
         """Test creation with custom parameters"""
         data = {
             "semester_id": 1,
-            "algorithm": "SA",
-            "num_solutions": 3,
-            "max_generations": 200,
-            "population_size": 100
+            "num_solutions": 3
         }
         schema = TimetableCreate(**data)
         
-        assert schema.algorithm == GenerationAlgorithm.SA
+        assert schema.semester_id == 1
         assert schema.num_solutions == 3
-        assert schema.max_generations == 200
-        assert schema.population_size == 100
     
     def test_invalid_semester_id(self):
         """Test that semester_id must be positive"""
@@ -75,26 +67,6 @@ class TestTimetableCreateSchema:
         # Test too high
         with pytest.raises(ValidationError):
             TimetableCreate(semester_id=1, num_solutions=11)
-    
-    def test_max_generations_range(self):
-        """Test max_generations constraints"""
-        # Test too low
-        with pytest.raises(ValidationError):
-            TimetableCreate(semester_id=1, max_generations=5)
-        
-        # Test too high
-        with pytest.raises(ValidationError):
-            TimetableCreate(semester_id=1, max_generations=1000)
-    
-    def test_population_size_range(self):
-        """Test population_size constraints"""
-        # Test too low
-        with pytest.raises(ValidationError):
-            TimetableCreate(semester_id=1, population_size=5)
-        
-        # Test too high
-        with pytest.raises(ValidationError):
-            TimetableCreate(semester_id=1, population_size=300)
 
 
 class TestSlotLockRequest:

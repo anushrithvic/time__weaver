@@ -27,6 +27,7 @@ from app.schemas.faculty import (
     FacultyDetailResponse, WorkloadResponse, WorkloadSummaryResponse
 )
 from app.services.workload_calculator import WorkloadCalculator
+from sqlalchemy.orm import selectinload
 
 router = APIRouter()
 
@@ -130,7 +131,11 @@ async def get_faculty(
         
     Test Coverage: tests/test_faculty.py::test_get_faculty
     """
-    faculty = await db.get(Faculty, faculty_id)
+    # Use selectinload to eagerly fetch the preferences relationship
+    query = select(Faculty).options(selectinload(Faculty.preferences)).where(Faculty.id == faculty_id)
+    result = await db.execute(query)
+    faculty = result.scalar_one_or_none()
+    
     if not faculty:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

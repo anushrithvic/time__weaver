@@ -22,7 +22,7 @@ Usage:
 """
 
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Optional
 
 
 class Settings(BaseSettings):
@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     # Database Configuration
     # PostgreSQL connection string with format: postgresql://user:password@host:port/database
     DATABASE_URL: str = "postgresql://timeweaver_user:timeweaver_password@localhost:5432/timeweaver_db"
+    TEST_DATABASE_URL: Optional[str] = None
     
     # API Configuration
     API_V1_PREFIX: str = "/api/v1"  # All API routes will be prefixed with this

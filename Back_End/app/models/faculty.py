@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from app.db.session import Base
 
 
+
 class Faculty(Base):
     """
     Faculty model representing a teaching faculty member.

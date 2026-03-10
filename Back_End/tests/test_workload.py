@@ -18,26 +18,31 @@ from app.models.faculty import Faculty
 from app.models.section import Section
 
 
+class DummyCourse:
+    def __init__(self, lecture=10, tutorial=5, theory=0):
+        self.lecture_hours = lecture
+        self.tutorial_hours = tutorial
+        self.theory_hours = theory
+
+class DummyAwaitable:
+    def __init__(self, course):
+        self.course = course
+
+class DummySection:
+    def __init__(self, course):
+        self.id = 1
+        self.faculty_id = 1
+        self.semester_id = 1
+        self.awaitable_attrs = DummyAwaitable(course)
+
 @pytest.fixture
 def mock_faculty():
-    """Create mock faculty object."""
-    faculty = MagicMock(spec=Faculty)
-    faculty.id = 1
-    faculty.max_hours_per_week = 18
-    return faculty
-
+    from app.models.faculty import Faculty
+    return Faculty(id=1, max_hours_per_week=18)
 
 @pytest.fixture
 def mock_section():
-    """Create mock section object."""
-    section = MagicMock(spec=Section)
-    section.id = 1
-    section.faculty_id = 1
-    section.semester_id = 1
-    # Configure awaitable_attrs for SQLAlchemy async relationships
-    section.awaitable_attrs = MagicMock()
-    section.awaitable_attrs.course = MagicMock()
-    return section
+    return DummySection(DummyCourse())
 
 
 @pytest.mark.asyncio
@@ -66,11 +71,11 @@ async def test_calculate_workload_normal(mock_faculty, mock_section):
     mock_result.scalars.return_value.all.return_value = mock_sections
     mock_db.execute = AsyncMock(return_value=mock_result)
     
-    # Mock course data
-    mock_course = MagicMock()
-    mock_course.lecture_hours = 10
-    mock_course.tutorial_hours = 5
-    mock_section.awaitable_attrs.course = mock_course
+    # # Mock course data
+    # mock_course = MagicMock()
+    # mock_course.lecture_hours = 10
+    # mock_course.tutorial_hours = 5
+    # mock_section.awaitable_attrs.course = mock_course
     
     # Call function
     workload = await WorkloadCalculator.calculate_workload(1, 1, mock_db)
@@ -108,11 +113,11 @@ async def test_calculate_workload_overloaded(mock_faculty, mock_section):
     mock_result.scalars.return_value.all.return_value = mock_sections
     mock_db.execute = AsyncMock(return_value=mock_result)
     
-    # Override course hours
-    mock_course = MagicMock()
+    # # Override course hours
+    # mock_course = MagicMock()
     mock_course.lecture_hours = 15
     mock_course.tutorial_hours = 5
-    mock_section.awaitable_attrs.course = mock_course
+    # mock_section.awaitable_attrs.course = mock_course
     
     workload = await WorkloadCalculator.calculate_workload(1, 1, mock_db)
     
@@ -297,8 +302,8 @@ async def test_workload_with_null_course_hours():
     mock_faculty.id = 1
     mock_faculty.max_hours_per_week = 18
     
-    section = MagicMock(spec=Section)
-    course = MagicMock()
+    course = DummyCourse(lecture=None, tutorial=5)
+    section = DummySection(course)
     course.lecture_hours = None
     course.tutorial_hours = 5
     section.awaitable_attrs.course = course

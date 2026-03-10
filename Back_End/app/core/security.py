@@ -12,23 +12,8 @@ This module provides:
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from app.core.config import settings
-
-
-# Password hashing context using bcrypt
-# Bcrypt has a max password length of 72 bytes
-# Disable default bcrypt settings to avoid version compatibility issues
-try:
-    pwd_context = CryptContext(
-        schemes=["bcrypt"],
-        deprecated="auto",
-        bcrypt__rounds=12
-    )
-except Exception:
-    # Fallback: create a basic context if there are version issues
-    from passlib.handlers.bcrypt import bcrypt
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT Configuration
 ALGORITHM = "HS256"
@@ -39,7 +24,7 @@ def hash_password(password: str) -> str:
     Hash a plain text password using bcrypt.
     
     Bcrypt has a maximum password length of 72 bytes.
-    We manually truncate to avoid bcrypt/passlib version issues.
+    We manually truncate to avoid bcrypt version issues.
     
     Args:
         password: Plain text password to hash
@@ -51,10 +36,10 @@ def hash_password(password: str) -> str:
         hashed = hash_password("MySecureP@ss123")
         # Returns: "$2b$12$KIX..."
     """
-    # Manually truncate to 72 bytes to avoid bcrypt version issues
     password_bytes = password.encode('utf-8')[:72]
-    password_truncated = password_bytes.decode('utf-8', errors='ignore')
-    return pwd_context.hash(password_truncated)
+    salt = bcrypt.gensalt(rounds=12)
+    hashed_bytes = bcrypt.hashpw(password_bytes, salt)
+    return hashed_bytes.decode('utf-8')
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -71,10 +56,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Example:
         is_valid = verify_password("MySecureP@ss123", user.hashed_password)
     """
-    # Truncate to 72 bytes to match hashing
     password_bytes = plain_password.encode('utf-8')[:72]
-    password_truncated = password_bytes.decode('utf-8', errors='ignore')
-    return pwd_context.verify(password_truncated, hashed_password)
+    hashed_bytes = hashed_password.encode('utf-8')
+    try:
+        return bcrypt.checkpw(password_bytes, hashed_bytes)
+    except ValueError:
+        return False
 
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
